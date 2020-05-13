@@ -14,7 +14,8 @@ namespace MBCPLUS_DAEMON
 {
     class CopyProgramSeqService
     {        
-        private Boolean _shouldStop = false;        
+        private Boolean _shouldStop = false;
+        private String m_edit_count_tail = "";
         private String m_srcpath;
         private String m_dstpath;        
         private String m_pk;
@@ -68,6 +69,7 @@ namespace MBCPLUS_DAEMON
                     {
                         m_pk = r["archive_pk"].ToString();
                         m_program_seq_pk = r["program_seq_pk"].ToString();
+                        m_edit_count_tail = r["edit_count_tail"].ToString();
                         //m_customer_pk = r["customer_pk"].ToString();
                         m_srcpath = r["srcpath"].ToString();
                         m_dstpath = r["dstpath"].ToString();
@@ -127,12 +129,20 @@ namespace MBCPLUS_DAEMON
                             frmMain.WriteLogThread(ftptargetpath);
 
                             //FTP_QUEUE 등록
-                            //String uuidFileName = Guid.NewGuid().ToString().ToUpper() + Path.GetExtension(m_dstpath);                            
-                            String cidFileName = m_gid.ToUpper() + Path.GetExtension(m_dstpath);
+                            //String uuidFileName = Guid.NewGuid().ToString().ToUpper() + Path.GetExtension(m_dstpath);   
+
+                            String FileName = "";
+                            if (String.IsNullOrEmpty(m_edit_count_tail))
+                            {
+                                FileName = String.Format("{0}{1}", m_gid.ToUpper(), Path.GetExtension(m_dstpath));
+                            } else
+                            {
+                                FileName = String.Format("{0}{1}{2}", m_gid.ToUpper(), m_edit_count_tail, Path.GetExtension(m_dstpath));
+                            }
                             // 회차 이미지는 customer_id : 2  LG_CDN으로 보냄
                             connPool.ConnectionOpen();
                             m_sql = String.Format(@"INSERT INTO TB_FTP_QUEUE (starttime, archive_pk, program_seq_pk, srcpath, targetfilename, status, type, customer_id, targetpath, gid)
-                                                VALUES( CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', '{3}', 'Pending', '{4}', '{7}', '{5}', '{6}')", m_pk, m_program_seq_pk, Util.escapedPath(m_dstpath), cidFileName, type, ftptargetpath, m_gid, "2");
+                                                VALUES( CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', '{3}', 'Pending', '{4}', '{7}', '{5}', '{6}')", m_pk, m_program_seq_pk, Util.escapedPath(m_dstpath), FileName, type, ftptargetpath, m_gid, "2");
                             cmd = new MySqlCommand(m_sql, connPool.getConnection());
                             cmd.ExecuteNonQuery();
                             connPool.ConnectionClose();

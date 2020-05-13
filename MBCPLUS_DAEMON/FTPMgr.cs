@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Net;
 using System.IO;
+using System.Web;
 using System.Data;
 using System.Xml;
 using System.Threading;
@@ -22,6 +23,7 @@ namespace MBCPLUS_DAEMON
         private String m_strSourcePath;
         private String m_strTargetPath;
         private String m_uploadPath;
+        private String m_deletePath;
         private String m_strTargetPathWithoutFileName;
         private String m_ftppath;
         private String m_host;
@@ -37,6 +39,7 @@ namespace MBCPLUS_DAEMON
         private Log log;
         private ConnectionPool m_conn;
         private SqlMapper mapper;
+        private int retryLimitCount = 5;
 
         //private MySqlConnection m_conn;
 
@@ -45,7 +48,7 @@ namespace MBCPLUS_DAEMON
             mapper = new SqlMapper();
             m_conn = conn;
             log = new Log(this.GetType().Name);
-            m_alais_YN = "N";            
+            m_alais_YN = "N";
         }
 
         public void SetSourcePath(String srcpath)
@@ -93,7 +96,7 @@ namespace MBCPLUS_DAEMON
             m_port = port;
             m_customer_id = customer_id;
             m_gid = gid;
-            m_cid = cid;            
+            m_cid = cid;
         }
 
         private void SessionFileTransferProgress(object sender, FileTransferProgressEventArgs e)
@@ -106,11 +109,11 @@ namespace MBCPLUS_DAEMON
         {
             try
             {
+                Singleton.getInstance().dm_accesstoken = null;
                 String accesstoken = Singleton.getInstance().dm_accesstoken;
                 //String refreshtoken = "03e8df4a23fcae3fbc2243302f39e415ba324740";
                 //String client_id = "31aa0be41e6a19e42204";
                 //String client_secret = "9be3d4dab81a28da00afb100fb86d1de85144294";
-
                 String refreshtoken = Singleton.getInstance().dm_refreshtoken;
                 String client_id = Singleton.getInstance().dm_client_id;
                 String client_secret = Singleton.getInstance().dm_client_secret;
@@ -133,12 +136,15 @@ namespace MBCPLUS_DAEMON
 
                 var response = "";
                 response = dmInfo.GetDmVideoUrl(get_upload_url, accesstoken);
-                
+
+                log.logging(response);
+
                 JObject obj;
                 obj = JObject.Parse(response);
                 String upload_url = (String)obj["upload_url"];
                 String progress_url = (String)obj["progress_url"];
                 response = dmInfo.DmVideoUpload(upload_url, progress_url, m_strSourcePath, m_pk);
+                log.logging(response);
                 
                 obj = JObject.Parse(response);
                 String videourl = (String)obj["url"];
@@ -146,8 +152,9 @@ namespace MBCPLUS_DAEMON
                 String videoid = null;
                 // create video
                 response = dmInfo.DmCreateVideo(url_create, videourl, accesstoken);
-                obj = JObject.Parse(response);
-                log.logging(obj.ToString());
+                log.logging(response);
+
+                obj = JObject.Parse(response);                
                 videoid = (String)obj["id"];
                 mapper.UpdateDMVideoid(m_cid, videoid);
                 String[] playlist_ids = dmInfo.playlistid.Split(',');
@@ -169,6 +176,19 @@ namespace MBCPLUS_DAEMON
                 url_video = String.Format("{0}{1}", url_video, videoid);
                 response = dmInfo.DmPublishVideo(url_video, accesstoken);
                 log.logging(response);
+
+                String captionUrl = mapper.GetCaption(m_cid);
+                if (!String.IsNullOrEmpty(captionUrl))
+                {
+                    String setCaptionUrl = String.Format(@"https://api.dailymotion.com/video/{0}/subtitles", videoid);
+                    NameValueCollection param = new NameValueCollection();
+                    param.Add("format", "SRT");
+                    param.Add("language", "ko");
+                    param.Add("url", captionUrl);
+                    log.logging("SetCaption : " + setCaptionUrl);
+                    response = dmInfo.SetCaption(setCaptionUrl, param, accesstoken);
+                    log.logging("caption response : " + response);
+                }
             }
             catch(WebException e)
             {
@@ -183,6 +203,7 @@ namespace MBCPLUS_DAEMON
                 }
                 log.logging(e.ToString());
                 log.logging(responseText);
+                Singleton.getInstance().dm_accesstoken = null;
                 return false;
             }
             return true;
@@ -196,6 +217,7 @@ namespace MBCPLUS_DAEMON
                 return false;
             }
             String destPath = String.Format("/{0}_{1}/{2}", Path.GetFileNameWithoutExtension(m_strSourcePath), ytInfo.session_id, Path.GetFileName(m_strSourcePath));
+            
             if (yt_SendFile(m_strSourcePath, destPath))
             {
                 if (Path.GetExtension(m_strSourcePath).ToLower() == ".mp4")
@@ -205,8 +227,12 @@ namespace MBCPLUS_DAEMON
                 }
                 else if (Path.GetExtension(m_strSourcePath).ToLower() == ".jpg" || Path.GetExtension(m_strSourcePath).ToLower() == ".png" )
                 {
-                    ytInfo.custom_thumbnail = Path.GetFileName(m_strSourcePath);
-                    //ytInfo.IsImgCompleted = true;
+                    ytInfo.custom_thumbnail = Path.GetFileName(m_strSourcePath);                    
+                }
+
+                else if (Path.GetExtension(m_strSourcePath).ToLower() == ".srt" )
+                {
+                    ytInfo.caption_file = Path.GetFileName(m_strSourcePath);
                 }
                 return true;
             }
@@ -230,66 +256,115 @@ namespace MBCPLUS_DAEMON
 
         private Boolean yt_SendFile(String srcPath, String dstPath)
         {
-            try
+            int retryCount = 0;
+            while (retryLimitCount > retryCount)
             {
-                log.logging(srcPath);
-                log.logging(dstPath);
-                SessionOptions sessionOptions = new SessionOptions
+                try
                 {
-                    Protocol = Protocol.Sftp,
-                    HostName = m_host,
-                    UserName = m_id,
-                    PortNumber = Convert.ToInt32(m_port),
-                    SshPrivateKeyPath = "id-rsa.ppk",
-                    GiveUpSecurityAndAcceptAnySshHostKey = true
-                };
+                    log.logging(srcPath);
+                    log.logging(dstPath);
+                    SessionOptions sessionOptions = new SessionOptions
+                    {
+                        Protocol = Protocol.Sftp,
+                        HostName = m_host,
+                        UserName = m_id,
+                        PortNumber = Convert.ToInt32(m_port),
+                        SshPrivateKeyPath = "id-rsa.ppk",
+                        GiveUpSecurityAndAcceptAnySshHostKey = true
+                    };
 
-                using (Session session = new Session())
+                    using (Session session = new Session())
+                    {
+                        session.FileTransferProgress += SessionFileTransferProgress;
+                        // Connect
+                        session.Open(sessionOptions);
+
+                        //Upload files
+                        TransferOptions transferOptions = new TransferOptions();
+                        transferOptions.TransferMode = TransferMode.Binary;
+                        transferOptions.OverwriteMode = OverwriteMode.Overwrite;
+
+                        String makeDIR = String.Format("/{0}", Path.GetDirectoryName(dstPath).Replace(@"\", ""));
+
+                        if (!session.FileExists(makeDIR))
+                        {
+                            session.CreateDirectory(makeDIR);
+                        }
+
+                        if (session.FileExists(dstPath))
+                        {
+                            log.logging(String.Format("{0} File OverWrite", dstPath));
+                        }
+                        else
+                        {
+                            log.logging(String.Format("{0} New File", dstPath));
+                            // overwrite
+                        }
+
+                        TransferOperationResult transferResult;
+                        transferResult = session.PutFiles(srcPath, dstPath, false, transferOptions);
+
+                        //Throw on any error
+                        transferResult.Check();
+
+                        //Print Result                    
+                        foreach (TransferEventArgs e in transferResult.Transfers)
+                        {
+                            log.logging(String.Format("Upload of {0} is succeeded", e.FileName));
+                        }
+                    }
+                    return true;
+                }
+                catch (Exception e)
                 {
-                    session.FileTransferProgress += SessionFileTransferProgress;
-                    // Connect
-                    session.Open(sessionOptions);
-
-                    //Upload files
-                    TransferOptions transferOptions = new TransferOptions();
-                    transferOptions.TransferMode = TransferMode.Binary;
-                    transferOptions.OverwriteMode = OverwriteMode.Overwrite;
-
-                    String makeDIR = String.Format("/{0}", Path.GetDirectoryName(dstPath).Replace(@"\",""));                    
-
-                    if (!session.FileExists(makeDIR))
-                    {
-                        session.CreateDirectory(makeDIR);
-                    }
-
-                    if (session.FileExists(dstPath))
-                    {
-                        log.logging(String.Format("{0} File OverWrite", dstPath));
-                    }
-                    else
-                    {
-                        log.logging(String.Format("{0} New File", dstPath));
-                        // overwrite
-                    }
-
-                    TransferOperationResult transferResult;
-                    transferResult = session.PutFiles(srcPath, dstPath, false, transferOptions);
-
-                    //Throw on any error
-                    transferResult.Check();
-
-                    //Print Result                    
-                    foreach (TransferEventArgs e in transferResult.Transfers)
-                    {
-                        log.logging(String.Format("Upload of {0} is succeeded", e.FileName));
-                    }                    
+                    log.logging(e.ToString());
+                    log.logging(String.Format("Retry Count : {0}", retryCount));
+                    //return false;
+                    retryCount++;
                 }
             }
-            catch (Exception e)
+            return false;
+        }
+        public Boolean Legacycheck(vo.FtpInfo ftpInfo )
+        {
+            String deleteFilename = "";
+            if ( ftpInfo.clip_mov_edit_count > 2)
             {
-                log.logging(e.ToString());
+                // count 하나 감소하고 지우기
+                m_strTargetPathWithoutFileName = Path.GetDirectoryName(m_strTargetPath).Replace(@"\", "/");
+                m_ftppath = m_strTargetPathWithoutFileName;
+                deleteFilename = String.Format("{0}_{1}{2}", Path.GetFileNameWithoutExtension(ftpInfo.old_targetfilename), (ftpInfo.clip_mov_edit_count -2).ToString("D2"), Path.GetExtension(ftpInfo.old_targetfilename));                
+            } else if ( ftpInfo.clip_mov_edit_count == 2) {
+                //원래 이름 지우기
+                deleteFilename = ftpInfo.old_targetfilename;
+            }
+            else if ( ftpInfo.clip_mov_edit_count < 2)
+            {
                 return false;
             }
+            m_deletePath = String.Format("{0}:{1}/{2}/{3}", m_host, m_port, ftpInfo.targetpath, deleteFilename);
+
+            return true;
+        }
+
+        public Boolean DeleteFile()
+        {
+            if (!String.IsNullOrEmpty(m_deletePath))
+            {
+                try
+                {
+                    FtpWebRequest requestDelete = WebRequest.Create(m_deletePath) as FtpWebRequest;
+                    requestDelete.Credentials = new NetworkCredential(m_id, m_pw);
+                    requestDelete.Method = WebRequestMethods.Ftp.DeleteFile;
+
+                    FtpWebResponse ftpResponse = requestDelete.GetResponse() as FtpWebResponse;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+            m_deletePath = "";
             return true;
         }
 
@@ -328,13 +403,13 @@ namespace MBCPLUS_DAEMON
                     requestMkdir.UsePassive = true;
                     requestMkdir.UseBinary = true;
                     requestMkdir.KeepAlive = false;
-                    requestMkdir.Timeout = 10000;
+                    requestMkdir.Timeout = 5000;
                     requestMkdir.EnableSsl = false;
                     requestMkdir.Credentials = new NetworkCredential(m_id, m_pw);
 
                     //log.logging("[FTPMgr] Before Mkdir : " + currenDir);
                     responseMkdir = (FtpWebResponse)requestMkdir.GetResponse();                    
-                    frmMain.WriteLogThread("[FTPMgr] Folder Make Successful " + responseMkdir.StatusCode.ToString());
+                    frmMain.WriteLogThread("[FTPMgr] Folder Make Successful " + currenDir);
                     log.logging("[FTPMgr] Folder Make Successful : " + responseMkdir.StatusCode.ToString());
                     log.logging("[FTPMgr] code description : " + responseMkdir.StatusDescription.ToString());
                     responseMkdir.Close();                    
@@ -370,7 +445,7 @@ namespace MBCPLUS_DAEMON
                     requestUpload.UsePassive = true;
                     requestUpload.UseBinary = true;
                     requestUpload.KeepAlive = false;
-                    requestUpload.Timeout = 10000;
+                    requestUpload.Timeout = 100000;
                     // 주의 2017-07-17에 추가됨 (EnableSsl)
                     requestUpload.EnableSsl = false;
                     requestUpload.Credentials = new NetworkCredential(m_id, m_pw);
@@ -413,7 +488,7 @@ namespace MBCPLUS_DAEMON
                     log.logging(e.StackTrace.ToString());
                     errmsg = e.ToString();
                     failcnt++;
-                    log.logging("FailCount = " + failcnt);
+                    log.logging(String.Format("({0}) FailCount : {1}", m_pk, failcnt));
                     isSuccess = false;
                     //return false;
                 }

@@ -19,10 +19,12 @@ namespace MBCPLUS_DAEMON
         private String[] m_strCallbackURL;
         private ConnectionPool connPool;
         private SqlMapper mapper;
-        private CdnInfo cdninfo;        
+        private CdnInfo cdninfo;
         //private delegate System.Windows.Forms.ListBox m_lstbox;
 
         Boolean m_isThreadRunning = false;
+
+        public Boolean Test { get; set; } = false;
 
         private YTInfo yt = null;
 
@@ -33,10 +35,13 @@ namespace MBCPLUS_DAEMON
         public String dm_client_id { get; set; } = "31aa0be41e6a19e42204";
         public String dm_client_secret { get; set; } = "9be3d4dab81a28da00afb100fb86d1de85144294";
 
+        public String BBMChost { get; set; }
+
+
         private Singleton()
         {
 
-        }
+        }        
 
         public YTInfo Get_YTInstance()
         {
@@ -135,7 +140,18 @@ namespace MBCPLUS_DAEMON
         public String[] GetStrCalalbackURL()
         {
             return m_strCallbackURL;
-        }   
+        }
+
+        public void setTestMode(String test)
+        {
+            if ( test == "true")
+            {
+                Test = true;                
+            } else
+            {
+                Test = false;
+            }
+        }
 
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.Synchronized)]
         public static Singleton getInstance()

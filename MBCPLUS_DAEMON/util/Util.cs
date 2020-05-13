@@ -4,11 +4,21 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace MBCPLUS_DAEMON
 {
     public static class Util
     {
+        public static List<T> CloneList<T>(List<T> oldList)
+        {
+            BinaryFormatter formatter = new BinaryFormatter();
+            MemoryStream stream = new MemoryStream();
+            formatter.Serialize(stream, oldList);
+            stream.Position = 0;
+            return (List<T>)formatter.Deserialize(stream);
+        }
+
         public static String escapedPath(String path)
         {
             return path.Replace(@"\", @"\\").Replace("'", @"''");
@@ -51,50 +61,60 @@ namespace MBCPLUS_DAEMON
             return dateTime.AddDays(addDay).ToString("yyyyMMdd");
         }
 
+        public static String getTestPath() {
+            StringBuilder sb = new StringBuilder();
+
+            sb.Append(@"Z:\mbcplus\archive");
+            sb.Append(Path.DirectorySeparatorChar);
+            sb.Append("test");
+            sb.Append(Path.DirectorySeparatorChar);
+            return sb.ToString();
+        }
+
         public static String getSectionPath(String section)
         {
             StringBuilder sb = new StringBuilder();
 
             sb.Append(@"Z:\mbcplus\archive");
             sb.Append(Path.DirectorySeparatorChar);
-            if (section == "01")
+            if (section == "S100")
             {
                 sb.Append("drama");
             }
-            else if (section == "02")
+            else if (section == "S200")
             {
-                // 02 예능
+                // 예능
                 sb.Append("ent");
             }
-            else if (section == "03")
+            else if (section == "S300")
             {
-                // 03 교양
+                // 교양
                 sb.Append("refinement");
             }
-            else if (section == "04")
+            else if (section == "S400")
             {
-                // 04 시사
+                // 시사
                 sb.Append("sisa");
             }
-            else if (section == "05")
+            else if (section == "S500")
             {
-                // 05 스포츠
+                // 스포츠
                 sb.Append("sports");
             }
-            else if (section == "06")
+            else if (section == "S600")
             {
-                // 06 어린이
+                // 어린이
                 sb.Append("kid");
             }
-            else if (section == "07")
+            else if (section == "S700")
             {
-                // 07 라디오
-                sb.Append("radio");
-            }
-            else if (section == "08")
-            {
-                // 08 음악
+                // 뮤직
                 sb.Append("music");
+            }
+            else if (section == "S800")
+            {
+                // 음악
+                sb.Append("game");
             }
             sb.Append(Path.DirectorySeparatorChar);                        
             return sb.ToString();

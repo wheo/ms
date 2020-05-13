@@ -16,18 +16,12 @@ namespace MBCPLUS_DAEMON
     class ArchiveProgramSeqService
     {        
         private Boolean _shouldStop = false;        
-        private String m_imgsrcpath;
+        
         //private String m_clipsrcpath;
         //private String m_dstpath;        
-        private String m_orgimgname;        
-        private String m_pk;
-        private String m_gid;
-        private String m_cdnurl_img;
-        private String m_archive_date;
-        //private String m_cid;
-        private String m_section;
-        private String m_sql = "";
-        private ConnectionPool connPool;
+
+        //private String m_sql = "";
+        //private ConnectionPool connPool;
         private Log log;
         private SqlMapper mapper;
 
@@ -53,10 +47,11 @@ namespace MBCPLUS_DAEMON
         void Run()
         {               
             String status = null;
-            MySqlCommand cmd;
+            vo.ProgramSeqInfo programSeqInfo = new vo.ProgramSeqInfo();            
+            //MySqlCommand cmd;
 
-            connPool = new ConnectionPool();
-            connPool.SetConnection(new MySqlConnection(Singleton.getInstance().GetStrConn()));            
+            //connPool = new ConnectionPool();
+            //connPool.SetConnection(new MySqlConnection(Singleton.getInstance().GetStrConn()));            
             
             //Waiting for make winform
             Thread.Sleep(5000);
@@ -68,40 +63,50 @@ namespace MBCPLUS_DAEMON
                 try
                 {
                     DataSet ds = new DataSet();
-                    mapper.GetArchiveProgramServiceInfo(ds);                    
+                    mapper.GetArchiveProgramSeqServiceInfo(ds);
 
                     foreach (DataRow r in ds.Tables[0].Rows)
                     {
                         try
-                        {
-                            m_pk = r["program_seq_pk"].ToString();
-                            m_imgsrcpath = r["imgsrcpath"].ToString();
-                            m_orgimgname = r["orgimgname"].ToString();
-                            m_gid = r["gid"].ToString();
-                            m_cdnurl_img = r["cdnurl_img"].ToString();
-                            m_archive_date = r["archive_date"].ToString();
-                            status = r["status"].ToString();
-                            m_section = r["section"].ToString();
+                        {                            
+                            programSeqInfo.pk = r["program_seq_pk"].ToString();
+                            programSeqInfo.gid = r["gid"].ToString();
                             
-                            if (!String.IsNullOrEmpty(m_imgsrcpath))
-                            {
-                                mapper.UpdateArchiveServiceRunning(m_pk);
+                            programSeqInfo.imgsrcpath = r["imgsrcpath"].ToString();
+                            programSeqInfo.orgimgname = r["orgimgname"].ToString();
+                            programSeqInfo.gid = r["gid"].ToString();
+                            programSeqInfo.cdn_img = r["cdnurl_img"].ToString();
+                            programSeqInfo.archive_date = r["archive_date"].ToString();                            
+                            programSeqInfo.section = r["section"].ToString();
+                            programSeqInfo.edit_img_count = Convert.ToInt32(r["edit_img_count"].ToString());
 
-                                frmMain.WriteLogThread(String.Format(@"program_seq_pk({0}) is Archive", m_pk));
+                            status = r["status"].ToString();
+
+                            if (!String.IsNullOrEmpty( programSeqInfo.imgsrcpath))
+                            {
+                                mapper.UpdateArchiveServiceRunning(programSeqInfo.gid);
+
+                                frmMain.WriteLogThread(String.Format(@"gid({0}) is Archive", programSeqInfo.gid));
                                 String targetPath = "";
 
                                 // 스포츠, 예능 구분해야함(프로그램 정보로부터 가져올 수 있음)
                                 StringBuilder sb = new StringBuilder();
-                                sb.Append(Util.getSectionPath(m_section));
-                                sb.Append(m_archive_date);
+                                if (Singleton.getInstance().Test)
+                                {
+                                    sb.Append(Util.getTestPath());
+                                } else
+                                {
+                                    sb.Append(Util.getSectionPath(programSeqInfo.section));
+                                }
+                                sb.Append(programSeqInfo.archive_date);
                                 sb.Append(Path.DirectorySeparatorChar);
-                                sb.Append(m_gid);
+                                sb.Append(programSeqInfo.gid);
 
                                 targetPath = sb.ToString();
 
                                 frmMain.WriteLogThread(targetPath);
 
-                                if (!String.IsNullOrEmpty(m_imgsrcpath))
+                                if (!String.IsNullOrEmpty( programSeqInfo.imgsrcpath))
                                 {
                                     try
                                     {
@@ -114,29 +119,34 @@ namespace MBCPLUS_DAEMON
                                     {
                                         frmMain.WriteLogThread(e.ToString());
                                     }
-                                    connPool.ConnectionOpen();
-                                    m_sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, program_seq_pk, srcpath, targetpath, type, status)
-                                                VALUES (CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', 'IMG', 'Pending')", m_pk, Util.escapedPath(m_imgsrcpath), Util.escapedPath(targetPath + Path.DirectorySeparatorChar + m_gid + Path.GetExtension(m_orgimgname.ToLower())));
 
-                                    cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                                    cmd.ExecuteNonQuery();
-                                    connPool.ConnectionClose();
+                                    String edit_count_string = "";
+                                    String dstpath = "";
+
+                                    //if (ftpInfo.clip_mov_edit_count > 1 && ftpInfo.type.ToLower() == "mov")
+                                    if (programSeqInfo.edit_img_count > 1)
+                                    {
+                                        edit_count_string = String.Format("_{0}", (programSeqInfo.edit_img_count - 1).ToString("D2"));                                        
+                                        
+                                    }
+                                    dstpath = Util.escapedPath(targetPath + Path.DirectorySeparatorChar + programSeqInfo.gid + edit_count_string + Path.GetExtension(programSeqInfo.orgimgname.ToLower()));
+                                    mapper.ArchiveProgramSeq(programSeqInfo.pk, Util.escapedPath(programSeqInfo.imgsrcpath), dstpath, edit_count_string);                                    
                                 }
                             }
-                            else if (m_cdnurl_img.Length > 7)
+                            else if ( programSeqInfo.cdn_img.Length > 7)
                             {
-                                connPool.ConnectionOpen();
-                                m_sql = String.Format("UPDATE TB_PROGRAM_SEQ SET starttime = CURRENT_TIMESTAMP(), status = 'Ready' WHERE program_seq_pk = '{0}'", m_pk);                                    
-                                cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                                cmd.ExecuteNonQuery();
-                                connPool.ConnectionClose();
-                                frmMain.WriteLogThread(String.Format(@"[ArchiveProgramService] {0} is already exist, clip_pk = {1}", m_cdnurl_img, m_pk));
-                            }                            
+                                mapper.UpdateProgramSeqStatus(programSeqInfo.gid, "Completed");
+                                frmMain.WriteLogThread(String.Format(@"[ArchiveProgramService] cdnimg : {0} is already exist, gid = {1}", programSeqInfo.cdn_img, programSeqInfo.gid));
+                            }
+                            else
+                            {
+                                mapper.UpdateProgramSeqStatus(programSeqInfo.gid, "Failed", "회차 이미지 없음");
+                            }
                         }
                         catch (Exception e)
                         {
                             log.logging(e.ToString());
-                            frmMain.WriteLogThread("[ArchveProgramService] " + e.ToString());
+                            //frmMain.WriteLogThread("[ArchveProgramService] " + e.ToString());
                         }
                     }
                     ds.Clear();
@@ -148,7 +158,7 @@ namespace MBCPLUS_DAEMON
                 }                
                 Thread.Sleep(1000);
             }
-            connPool.ConnectionDisPose();
+            //connPool.ConnectionDisPose();
             log.logging("Thread Terminate" + _shouldStop);
         }
     }

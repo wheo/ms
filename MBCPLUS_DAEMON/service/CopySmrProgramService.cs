@@ -12,16 +12,16 @@ using MySql.Data.MySqlClient;
 
 namespace MBCPLUS_DAEMON
 {
-    class CopyProgramService
+    class CopySmrProgramService
     {        
-        private Boolean _shouldStop = false;                    
-        private String m_sql = "";
+        private Boolean _shouldStop = false;                
+        private String m_sql = "";       
         private ConnectionPool connPool;
         private SqlMapper mapper;
 
         private Log log;
 
-        public CopyProgramService()
+        public CopySmrProgramService()
         {
             //put this className
             mapper = new SqlMapper();
@@ -41,7 +41,11 @@ namespace MBCPLUS_DAEMON
         }
 
         void Run()
-        { 
+        {
+            DataSet ds = new DataSet();            
+            String status = null;
+            String type = null;
+
             String srcpath;
             String dstpath;
             String pk;
@@ -49,9 +53,6 @@ namespace MBCPLUS_DAEMON
             String img_type;
             String edit_count_tail = "";
 
-            DataSet ds = new DataSet();            
-            String status = null;
-            String type = null;
             MySqlCommand cmd;
             connPool = new ConnectionPool();
             connPool.SetConnection(new MySqlConnection(Singleton.getInstance().GetStrConn()));
@@ -64,19 +65,18 @@ namespace MBCPLUS_DAEMON
             {
                 try
                 {
-                    mapper.GetCopyProgramService(ds);                    
+                    mapper.GetCopySmrProgramService(ds);                    
                     foreach (DataRow r in ds.Tables[0].Rows)
                     {
                         pk = r["pk"].ToString();
                         pid = r["pid"].ToString();
-                        edit_count_tail = r["edit_count_tail"].ToString();
                         //m_customer_pk = r["customer_pk"].ToString();
                         srcpath = r["srcpath"].ToString();
                         dstpath = r["dstpath"].ToString();                        
                         status = r["status"].ToString();
                         type = r["type"].ToString();
-                        img_type = r["program_img_type"].ToString();
-
+                        img_type = r["smr_img_type"].ToString();
+                        edit_count_tail = r["edit_count_tail"].ToString();
 
                         connPool.ConnectionOpen();
                         m_sql = String.Format("UPDATE TB_ARCHIVE SET starttime = CURRENT_TIMESTAMP(), status = 'Running' WHERE archive_pk = '{0}'", pk);
@@ -96,60 +96,52 @@ namespace MBCPLUS_DAEMON
                             CustomFileCopier copier = new CustomFileCopier(srcpath, dstpath);
                             copier.Copy();
 
-                            //UpdateArchiveStatue 로 수정해야 함(리팩토링 2019-01-28 아직 안함)
                             //Completed 로 변경
                             connPool.ConnectionOpen();
                             m_sql = String.Format(@"UPDATE TB_ARCHIVE SET endtime = CURRENT_TIMESTAMP(), status = 'Completed' WHERE archive_pk = '{0}'", pk);
                             cmd = new MySqlCommand(m_sql, connPool.getConnection());
                             cmd.ExecuteNonQuery();
                             connPool.ConnectionClose();
-                            
-                            String convert_targetpath = dstpath.Substring(2, dstpath.Length - 2).Replace('\\', '/');
 
+                            //Z:\mbcplus\archive\sports\2016\10\31\GA201610310001\CA201610310001\160824_0824_모비스vs동부_C_05_2쿼터_모처럼_속공_성공시키는_전준범.mp4
+                            String convert_targetpath = dstpath.Substring(2, dstpath.Length - 2).Replace('\\', '/');
                             String img_type_name = "";
                             String tail = "";
+
+                            log.logging(convert_targetpath);
 
                             if (img_type == "1")
                             {
                                 img_type_name = "archive_img";
                                 tail = "";
-                            }
-                            else if (img_type == "2")
+                            } else if ( img_type == "2")
                             {
-                                img_type_name = "archive_poster_img";
-                                tail = "_P";
-                            }
-                            else if (img_type == "3")
+                                img_type_name = "archive_posterimg1";
+                                tail = "_P1";
+                            } else if ( img_type == "3")
                             {
-                                img_type_name = "archive_thumb_img";
+                                img_type_name = "archive_posterimg2";
+                                tail = "_P2";
+                            } else if ( img_type == "4")
+                            {
+                                img_type_name = "archive_bannerimg";
+                                tail = "_B";
+                            } else if ( img_type == "5")
+                            {
+                                img_type_name = "archive_thumbimg";
                                 tail = "_T";
                             }
-                            else if (img_type == "4")
-                            {
-                                img_type_name = "archive_circle_img";
-                                tail = "_C";
-                            }                            
-                            if (!String.IsNullOrEmpty(img_type_name))
+                            if ( !String.IsNullOrEmpty(img_type_name) )
                             {
                                 connPool.ConnectionOpen();
-                                m_sql = String.Format(@"UPDATE TB_PROGRAM SET {2} = '{0}' WHERE pid = '{1}'", convert_targetpath, pid, img_type_name);
+                                m_sql = String.Format(@"UPDATE TB_SMR_PROGRAM SET {2} = '{0}' WHERE pid = '{1}'", convert_targetpath, pid, img_type_name);
                                 cmd = new MySqlCommand(m_sql, connPool.getConnection());
                                 cmd.ExecuteNonQuery();
                                 connPool.ConnectionClose();
-                            }
-                            else
+                            } else
                             {
                                 log.logging(String.Format("img_type_name is null({0})", img_type));
-                            }
-
-                            /*
-                            frmMain.WriteLogThread(convert_targetpath);
-                            connPool.ConnectionOpen();
-                            m_sql = String.Format(@"UPDATE TB_PROGRAM SET archive_img = '{0}' WHERE pid = '{1}'", convert_targetpath, m_pid);
-                            cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                            cmd.ExecuteNonQuery();
-                            connPool.ConnectionClose();
-                            */
+                            }                            
 
                             // 원본 파일을 삭제
                             //File.Delete(m_srcpath);
@@ -157,7 +149,7 @@ namespace MBCPLUS_DAEMON
 
                             //SEQ 상태를 Sending 로 변경
                             connPool.ConnectionOpen();
-                            m_sql = String.Format(@"UPDATE TB_PROGRAM SET status = 'Sending' WHERE pid = '{0}'", pid);
+                            m_sql = String.Format(@"UPDATE TB_SMR_PROGRAM SET status = 'Sending' WHERE pid = '{0}'", pid);
                             cmd = new MySqlCommand(m_sql, connPool.getConnection());
                             cmd.ExecuteNonQuery();
                             connPool.ConnectionClose();
@@ -170,7 +162,6 @@ namespace MBCPLUS_DAEMON
 
                             //FTP_QUEUE 등록
                             //String uuidFileName = Guid.NewGuid().ToString().ToUpper() + Path.GetExtension(m_dstpath);
-                            //String FileName = pid.ToUpper() + Path.GetExtension(dstpath);
                             String FileName = "";
                             if (String.IsNullOrEmpty(edit_count_tail))
                             {
@@ -180,8 +171,14 @@ namespace MBCPLUS_DAEMON
                                 FileName = String.Format("{0}{1}{2}{3}", pid.ToUpper(), tail, edit_count_tail, Path.GetExtension(dstpath));
                             }
                             connPool.ConnectionOpen();
-                            m_sql = String.Format(@"INSERT INTO TB_FTP_QUEUE (starttime, archive_pk, pid, srcpath, targetfilename, status, type, customer_id, targetpath, program_img_type)
-                                                VALUES( CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', '{3}', 'Pending', '{4}', '2', '{5}', {6})", pk, pid, Util.escapedPath(dstpath), FileName, type, ftptargetpath, img_type);
+                            m_sql = String.Format(@"INSERT INTO TB_FTP_QUEUE (starttime, archive_pk, smr_pid, srcpath, targetfilename, status, type, customer_id, targetpath, smr_img_type)
+                                                VALUES( CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', '{3}', 'Pending', '{4}', '2', '{5}', {6})", pk
+                                                , pid
+                                                , Util.escapedPath(dstpath)
+                                                , FileName
+                                                , type
+                                                , ftptargetpath
+                                                , img_type);
                             cmd = new MySqlCommand(m_sql, connPool.getConnection());
                             cmd.ExecuteNonQuery();
                             connPool.ConnectionClose();

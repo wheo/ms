@@ -72,6 +72,7 @@ namespace MBCPLUS_DAEMON
                     foreach (DataRow r in ds.Tables[0].Rows)
                     {
                         m_pk = r["clip_pk"].ToString();
+                        String cid = r["cid"].ToString(); // cid 때문에 문제 생기면 지우기
                         String edit_date = r["edit_date"].ToString();
                         String userid = r["userid"].ToString();
                         String contentid = r["contentid"].ToString(); ;
@@ -120,6 +121,7 @@ namespace MBCPLUS_DAEMON
                         String cdnurl_mov = r["cdnurl_mov"].ToString();
                         String filepath = cdnurl_mov.Replace(mediadomain, "");
                         String contentimg = cdnurl_img.Replace(img_mediadomain, "");
+                        String actor = r["actor"].ToString();
                         //String contentimg = "/ATTACHMENT/SMR/IMAGE/A000000308/2016/10/17/T9201610170109.jpg";
 
                         //ADD LOG                        
@@ -154,6 +156,7 @@ namespace MBCPLUS_DAEMON
                                 new JProperty("cliporder", cliporder),
                                 new JProperty("title", title),
                                 new JProperty("synopsis", synopsis),
+                                new JProperty("actor", actor),
                                 new JProperty("searchkeyword", searchkeyword),
                                 new JProperty("mediadomain", mediadomain),
                                 new JProperty("filepath", filepath),
@@ -228,7 +231,7 @@ namespace MBCPLUS_DAEMON
                             {
                                 foreach (JProperty p in o.Properties())
                                 {
-                                    log.logging("[ClipService] " + p.Name + " | " + p.Value);
+                                    log.logging(String.Format("[ClipService]({0}) {1}|{2}", cid, p.Name, p.Value));
                                     if (p.Name == "primarykey")
                                     {
                                         primarykey = (String)p.Value;
@@ -243,14 +246,14 @@ namespace MBCPLUS_DAEMON
                                     metaSuccess = false;
                                 }
                             }
-                            log.logging("[ClipService] primarykey is " + primarykey);
+                            log.logging(String.Format("[ClipService] ({0}) primarykey is : {1}",cid, primarykey));
                             if (metaSuccess)
                             {
                                 // primarykey 1 이면 update
                                 if (primarykey == "1")
                                 {
                                     m_sql = String.Format("UPDATE TB_CLIP SET endtime = CURRENT_TIMESTAMP(), status = 'Completed' WHERE clip_pk = '{0}'", m_pk);
-                                }                                        
+                                }
                                 else if (!String.IsNullOrEmpty(primarykey)) // primarykey 가 있으면 update
                                 {
                                     m_sql = String.Format("UPDATE TB_CLIP SET endtime = CURRENT_TIMESTAMP(), status = 'Completed', clipid = '{0}' WHERE clip_pk = '{1}'", primarykey, m_pk);

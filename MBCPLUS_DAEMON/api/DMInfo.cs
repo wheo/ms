@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Net;
+using System.Web;
 using System.IO;
 using System.Threading;
 using System.Collections.Specialized;
@@ -22,6 +23,7 @@ namespace MBCPLUS_DAEMON
         public String isuse { get; set; }
         public String url { get; set; }
         public String playlistid { get; set; }
+        public String old_playlistid { get; set; }
         public String publish_date { get; set; }
         public String expiry_date { get; set; }
         public String policy_YN { get; set; }
@@ -30,6 +32,8 @@ namespace MBCPLUS_DAEMON
         public String geoblock_value { get; set; }
         public String thumbnail_url { get; set; }
         public String explicit_YN { get; set; }
+        public String status { get; set; }
+        public String yt_status { get; set; }
 
         private Log log = null;
         SqlMapper mapper = null;
@@ -42,11 +46,11 @@ namespace MBCPLUS_DAEMON
 
         public String GetThumbnailURL()
         {
-            String url = null;
-            url = mapper.GetThumbnail(cid);
+            String url = null;            
             int count = 0;
             while (count < 10)
             {
+                url = mapper.GetThumbnail(cid);
                 if (!String.IsNullOrEmpty(url))
                 {
                     break;
@@ -54,6 +58,10 @@ namespace MBCPLUS_DAEMON
                 Thread.Sleep(1000);
                 log.logging(String.Format("Waiting For Thumbnail ({0})", cid));
                 count++;
+            }
+            if (String.IsNullOrEmpty(url))
+            {
+                url = String.Format("{0}?{1}", url, DateTime.Now.Ticks.ToString("x"));
             }
             return url;
         }
@@ -92,7 +100,8 @@ namespace MBCPLUS_DAEMON
                         responseString = reader.ReadToEnd();
                     }
                 }
-            }            
+            }
+            log.logging(url);
             return responseString;
         }
 
@@ -124,6 +133,63 @@ namespace MBCPLUS_DAEMON
             return responseString;
         }
 
+        public String DeleteDMPlaylist(String url, String accessToken)
+        {
+            int timeout = (int)5000;
+            String responseString = null;
+            try
+            {
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+                request.Timeout = timeout;
+                request.Method = "DELETE";
+                request.Headers.Add("Authorization", "Bearer " + accessToken);
+                using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+                {
+                    using (Stream dataStream = response.GetResponseStream())
+                    {
+                        using (StreamReader reader = new StreamReader(dataStream, Encoding.UTF8))
+                        {
+                            responseString = reader.ReadToEnd();
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                log.logging(e.ToString());
+            }
+            return responseString;
+        }
+
+        public String SetCaption(String url, NameValueCollection param, String accessToken)
+        {
+            byte[] response = null;
+            try
+            {                
+                using (WebClient client = new WebClient())
+                {
+                    client.Headers.Add("Authorization", "Bearer " + accessToken);
+                    response = client.UploadValues(url, param);
+                }                
+            }
+            catch (WebException e)
+            {
+                String responseText = null;
+                var responseStream = e.Response?.GetResponseStream();
+                if (responseStream != null)
+                {
+                    using (var reader = new StreamReader(responseStream))
+                    {
+                        responseText = reader.ReadToEnd();
+                    }
+                }
+                log.logging(e.ToString());
+                log.logging(responseText);
+                return responseText;
+            }
+            return Encoding.UTF8.GetString(response);
+        }
+
         public String DmVideoUpload(String upload_url, String progress_url, string fullFilePath, String pk)
         {
             FileInfo fi = new FileInfo(fullFilePath);
@@ -144,6 +210,9 @@ namespace MBCPLUS_DAEMON
                 {
                     read = fs.Read(buffer, 0, buffer.Length);
                     totalRead += read;
+
+                    ServicePointManager.Expect100Continue = true;
+                    ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3 | SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
 
                     WebRequest request = WebRequest.Create(upload_url);
                     request.Method = "POST";
@@ -222,6 +291,8 @@ namespace MBCPLUS_DAEMON
                 client.Headers.Add("Authorization", "Bearer " + accessToken);
                 response = client.UploadValues(url, pairs);
             }
+            log.logging(url);
+            //log.logging(pairs.ToString());
             return Encoding.UTF8.GetString(response);
         }
 
@@ -261,32 +332,102 @@ namespace MBCPLUS_DAEMON
 
             // published 연동할 것
             pairs.Add("private", isuse == "N" ? "true" : "false");
-            pairs.Add("published", "false");
+            pairs.Add("published", "true");
             pairs.Add("title", title);
             pairs.Add("tags", tags);
             pairs.Add("channel", category);
             pairs.Add("description", description);
-            pairs.Add("publish_date", publish_date);
-            pairs.Add("expiry_date", expiry_date);
+            if (!String.IsNullOrEmpty(publish_date))
+            {
+                pairs.Add("publish_date", publish_date);
+            }
+            if (!String.IsNullOrEmpty(expiry_date))
+            {
+                pairs.Add("expiry_date", expiry_date);
+            }
+            /*
             if (!String.IsNullOrEmpty(thumbNailUrl))
             {
                 pairs.Add("thumbnail_url", thumbNailUrl);
             }
-            String geoblockString = String.Format("{0},{1}", geoblock_value, geoblock_code.ToLower());
-            if (!String.Equals(geoblock_value, "none") || !String.IsNullOrEmpty(geoblock_value))
+
+            log.logging("dm thumbnail url : " + thumbNailUrl);
+            */
+
+            String geoblockString = "";
+
+            if (String.IsNullOrEmpty(geoblock_code))
+            {
+                geoblockString = String.Format("{0}", geoblock_value);
+            }
+            else
+            {
+                geoblockString = String.Format("{0},{1}", geoblock_value, geoblock_code.ToLower());
+            }
+
+            if (!String.Equals(geoblock_value, "none") || !String.IsNullOrEmpty(geoblock_code))
             {
                 pairs.Add("geoblocking", geoblockString);
             }
+            else
+            {
+                // none 을 선택하면 전체 허용
+                pairs.Add("geoblocking", "allow");
+            }
+            var items = pairs.AllKeys.SelectMany(pairs.GetValues, (k, v) => new { key = k, value = v });
+            log.logging(String.Format("({0}) Dminfo Parameter", cid));
+
+            foreach(var item in items)
+            {
+                log.logging(String.Format("{0} : {1}", item.key, item.value));
+            }
+
             using (WebClient client = new WebClient())
             {
                 client.Headers.Add("Authorization", "Bearer " + accessToken);
                 response = client.UploadValues(url, pairs);
             }
+            log.logging(url);
+            //log.logging(pairs.ToString());
             return Encoding.UTF8.GetString(response);
         }
 
         public String DmEditVideo(String url, String accessToken)
         {
+            String[] playlist_ids = playlistid.Split(',');
+            String[] oldplaylist_ids = old_playlistid.Split(',');
+            String PlaylistURL = null;
+            String responStr = null;
+
+            if (oldplaylist_ids.Length > 0)
+            {
+                foreach(String old_playlist_id in oldplaylist_ids)
+                {
+                    if (!String.IsNullOrEmpty(old_playlist_id))
+                    {
+                        PlaylistURL = String.Format("https://api.dailymotion.com/playlist/{0}/videos/{1}", old_playlist_id, videoid);
+                        responStr = DeleteDMPlaylist(PlaylistURL, accessToken);
+                    }
+                    log.logging("DeleteDMPlaylist : " + PlaylistURL);
+                }
+            }
+            PlaylistURL = null;
+            responStr = null;
+
+            if (playlist_ids.Length > 0)
+            {
+                foreach (String playlist_id in playlist_ids)
+                {
+                    if (!String.IsNullOrEmpty(playlist_id))
+                    {
+                        PlaylistURL = String.Format("https://api.dailymotion.com/playlist/{0}/videos/{1}", playlist_id, videoid);
+                        //linking playlist                        
+                        responStr = SetDMPlaylist(PlaylistURL, accessToken);
+                        log.logging("SetDMPlaylist : " + PlaylistURL);
+                    }
+                }
+            }
+
             byte[] response = null;
             NameValueCollection pairs = new NameValueCollection();
 
@@ -318,7 +459,7 @@ namespace MBCPLUS_DAEMON
             }
             log.logging("tags : " + tags);
 
-            // String thumbNailUrl = dmInfo.GetThumbnailURL();
+            String thumbNailUrl = GetThumbnailURL();
 
             if (String.IsNullOrEmpty(category) )
             {
@@ -335,11 +476,27 @@ namespace MBCPLUS_DAEMON
             pairs.Add("description", description);
             pairs.Add("publish_date", publish_date);
             pairs.Add("expiry_date", expiry_date);
-            //pairs.Add("thumbnail_url", thumbNailUrl);
-            String geoblockString = String.Format("{0},{1}", geoblock_value, geoblock_code.ToLower());
-            if (!String.Equals(geoblock_value, "none") || !String.IsNullOrEmpty(geoblock_value))
+            if (! String.IsNullOrEmpty(thumbNailUrl) )
+            {
+                pairs.Add("thumbnail_url", thumbNailUrl);
+            }
+
+            String geoblockString = "";
+            if ( String.IsNullOrEmpty(geoblock_code) )
+            {
+                geoblockString = String.Format("{0}", geoblock_value);                
+            } else
+            {
+                geoblockString = String.Format("{0},{1}", geoblock_value, geoblock_code.ToLower());
+            }
+            
+            if (!String.Equals(geoblock_value, "none") || !String.IsNullOrEmpty(geoblock_code))
             {
                 pairs.Add("geoblocking", geoblockString);
+            }
+            else
+            {
+                pairs.Add("geoblocking", "allow");
             }
             using (WebClient client = new WebClient())
             {

@@ -47,14 +47,15 @@ namespace MBCPLUS_DAEMON.service
             for (int i = -1; i < 6; i++)
             {
                 date = Util.GetCurrentDate(i);
-
-                alltheKpop.SID = String.Format("{0}-1", date);
+                
                 alltheKpop.MID = "ALLTHEKPOP";
                 alltheKpop.ch_name = "ALLTHEKPOP";
-                alltheKpop.ch_no = "3";
-                alltheKpop.ProgramName = "DAILY K-POP";
+                alltheKpop.ch_no = "5";
                 alltheKpop.Grade = "0";
                 alltheKpop.StartYMD = date;
+
+                alltheKpop.SID = String.Format("{0}-1", date);
+                alltheKpop.ProgramName = "DAILY K-POP";
                 alltheKpop.StartTime = "05:00:00";
                 alltheKpop.EndTime = "07:00:00";
                 mapper.InsertEpginfo(alltheKpop);
@@ -93,20 +94,21 @@ namespace MBCPLUS_DAEMON.service
             String EPG_URL = Singleton.getInstance().EPG_URL;
             String response;
             String today;
-            String[] channel = new String[3];
+            String[] channel = new String[5];
             int addDay = -1;
             channel[0] = "1";
             channel[1] = "2";
-            channel[2] = "4";
+            channel[2] = "3";
+            channel[3] = "4";
+            channel[4] = "8";
             int ch_index = 0;
-
-            //MakeAlltheKPOP();
 
             while (!_shouldStop)
             {
                 try
-                {                    
-                    //channel 1 : 드라마, 2 : every1 4: Music
+                {   
+                    //channel 1 : 드라마, 2 : 에브리원, 3 : 뮤직, 4 : ON 으로 2019-06-13주소를 htp://211.xxx.xxx.xxx 로 바뀌면서 바뀜
+                    //allthe k pop 추가 : 8
                     Thread.Sleep(1000);
 
                     today = Util.GetCurrentDate(addDay);
@@ -125,6 +127,9 @@ namespace MBCPLUS_DAEMON.service
                     mapper.DeleteEpgInfo(today, channel[ch_index]);
                     //log.logging(String.Format("Delete EpgInfo : day {0} ch_no : {1}", today, channel[ch_index]));
 
+                    String prevEndTime = null;
+                    var epgList = new List<vo.EPGInfo>();
+
                     XmlDocument xmldoc = new XmlDocument();
                     XmlNodeList xmlnodes;
                     xmldoc.LoadXml(response);
@@ -132,10 +137,9 @@ namespace MBCPLUS_DAEMON.service
 
                     xmlnodes = root.ChildNodes;
 
-                    vo.EPGInfo epgInfo = new vo.EPGInfo();
-
                     foreach (XmlNode eventnode in xmlnodes)
                     {
+                        vo.EPGInfo epgInfo = new vo.EPGInfo();
                         foreach (XmlNode node in eventnode)
                         {
                             switch (node.Name)
@@ -161,11 +165,11 @@ namespace MBCPLUS_DAEMON.service
                                 case "StartYMD":
                                     epgInfo.StartYMD = node.InnerText.Trim();
                                     break;
-                                case "StartTime":
-                                    epgInfo.StartTime = node.InnerText.Trim();
+                                case "StartTime":                                    
+                                    epgInfo.StartTime = node.InnerText.Trim();                                                                                                       
                                     break;
                                 case "EndTime":
-                                    epgInfo.EndTime = node.InnerText.Trim();
+                                    epgInfo.EndTime = node.InnerText.Trim();                                    
                                     break;
                                 case "Frequency":
                                     epgInfo.Frequency = node.InnerText.Trim();
@@ -184,20 +188,33 @@ namespace MBCPLUS_DAEMON.service
                                     break;
                             }
                         }
+
+                        epgList.Add(epgInfo);
                         //  insert 부분
-                        mapper.InsertEpginfo(epgInfo);
+                        //mapper.InsertEpginfo(epgInfo);                        
                     }
+                    String nextStartTime = null;
+                    for (int i = 0; i < epgList.Count; i++)
+                    {
+                        if (i < epgList.Count - 1)
+                        {
+                            nextStartTime = epgList[i + 1].StartTime;
+                            epgList[i].EndTime = nextStartTime;
+                        }
+                        mapper.InsertEpginfo(epgList[i]);
+                    }
+
                     if (addDay == 6)
                     {
                         addDay = -1;
                         ch_index++;
-                        if (ch_index == 3)
+                        if (ch_index == 5)
                         {
                             ch_index = 0;
-                            log.logging("MakeAlltheKpop");
+                            //log.logging("MakeAlltheKpop");
                             // Make AllthekPOP
-                            MakeAlltheKPOP();
-                            for (int i = 0; i < 60 * 60; i++) // 5분 마다 갱신
+                            //MakeAlltheKPOP();
+                            for (int i = 0; i < 1 * 60 * 60; i++) // 3600초
                             {                                
                                 Thread.Sleep(1000);
                                 if (_shouldStop)

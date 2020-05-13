@@ -17,7 +17,7 @@ namespace MBCPLUS_DAEMON.vo
         public String StartYMD { get; set; }
         public String StartTime { get; set; }
         public String EndTime { get; set; }
-        public String Frequency { get; set; }        
+        public String Frequency { get; set; }
         public String HD { get; set; }
         public String Duration { get; set; }
         public String Grade { get; set; }

@@ -14,7 +14,7 @@ using Newtonsoft.Json.Linq;
 
 namespace MBCPLUS_DAEMON
 {
-    class ArchiveProgramService
+    class ProgramSeqService
     {
         private Boolean _shouldStop = false;        
         //private String m_imgsrcpath;
@@ -27,7 +27,7 @@ namespace MBCPLUS_DAEMON
 
         private Log log;
 
-        public ArchiveProgramService()
+        public ProgramSeqService()
         {
             // put this className
             mapper = new SqlMapper();
@@ -232,7 +232,7 @@ namespace MBCPLUS_DAEMON
                 }
                 catch (Exception e)
                 {
-                    frmMain.WriteLogThread(e.ToString());
+                    //frmMain.WriteLogThread(e.ToString());
                     log.logging(e.ToString());
                 }
                 Thread.Sleep(1000);

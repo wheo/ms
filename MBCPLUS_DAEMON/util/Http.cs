@@ -61,8 +61,8 @@ namespace MBCPLUS_DAEMON
                     }
                 }
             }
-            catch (Exception e)
-            {                
+            catch (Exception)
+            {
 
             }
             return responseString;

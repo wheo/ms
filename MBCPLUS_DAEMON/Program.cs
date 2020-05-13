@@ -32,21 +32,26 @@ namespace MBCPLUS_DAEMON
             String strEPGUrl = myIni.Read("epgurl");
             String strCallbackURL_m = myIni.Read("callback_url_m");
             String strCallbackURL_b = myIni.Read("callback_url_b");
+            String strBBMCHost = myIni.Read("bbmchost");
 
             strCallbackURL[0] = strCallbackURL_m;
             strCallbackURL[1] = strCallbackURL_b;
             //int threadCount = Int32.Parse(strThreadCount);
             //int threadCount = Convert.ToInt16(strThreadCount);
 
+            //test 프로그램 여부
+            Singleton.getInstance().setTestMode(myIni.Read("test")); // ini를 읽어서 true면 archive 및 cdn test 경로로 생성됨
+
+            Singleton.getInstance().BBMChost = strBBMCHost;
+
             Singleton.getInstance().SetStrConn(strConn);
             Singleton.getInstance().SetStrCallbackURL(strCallbackURL);
             Singleton.getInstance().EPG_URL = strEPGUrl;
-            //Singleton.getInstance().SetConnection(new MySqlConnection(strConn));
 
             CdnInfo cdninfo = new CdnInfo();
 
             cdninfo.strCDNHost = "https://openapi.cloudn.co.kr";
-            cdninfo.strCDNMethods = "/cdnservice/downloadpath,/cdnservice/streampath";            
+            cdninfo.strCDNMethods = "/cdnservice/downloadpath,/cdnservice/streampath";
             cdninfo.strCDNMethod = cdninfo.strCDNMethods.Split(',');
             cdninfo.strAPIKey = "2690b505-2ea5-486b-b8d5-ce749277fef0";
             cdninfo.strFTPid = "mbcplus_mbcplus-dn,mbcplus_mbcpvod";
@@ -61,18 +66,26 @@ namespace MBCPLUS_DAEMON
             {
                 mtx.ReleaseMutex();
 
-                YoutubeService youtubeService = new YoutubeService();
-                DailmotionService dailymotionService = new DailmotionService();
-                ProgramseqService programseqService = new ProgramseqService();
-                ClipService clipService = new ClipService();
+                YoutubeService youtubeService = null;
+                DailmotionService dailymotionService = null;
+                
+                if (!Singleton.getInstance().Test)                
+                {
+                    youtubeService = new YoutubeService();
+                    dailymotionService = new DailmotionService();
+                }
+                //ClipService clipService = new ClipService(); /*삭제 예정 MetaHub 관련*/
+                ProgramSeqService programSeqService = new ProgramSeqService();
                 ArchiveProgramService archiveProgramService = new ArchiveProgramService();
+                ArchiveSmrProgramService archiveSmrProgramService = new ArchiveSmrProgramService();
                 ArchiveProgramSeqService archiveProgramSeqService = new ArchiveProgramSeqService();
-                ArchiveClipService archiveService = new ArchiveClipService();
+                ArchiveClipService archiveClipService = new ArchiveClipService();
                 CopyProgramService copyProgramService = new CopyProgramService();
+                CopySmrProgramService copySmrProgramService = new CopySmrProgramService();
                 CopyProgramSeqService copyProgramSeqService = new CopyProgramSeqService();
                 CopyClipService copyClipService = new CopyClipService();
-                FTPService ftpService = new FTPService();                
-                CDNService cdnService = new CDNService();                
+                FTPService ftpService = new FTPService();
+                CDNService cdnService = new CDNService();
                 service.BroadPlanService broadPlanService = new service.BroadPlanService();
 
                 Application.EnableVisualStyles();
@@ -84,14 +97,22 @@ namespace MBCPLUS_DAEMON
                 ftpService.RequestStop();
                 copyClipService.RequestStop();
                 copyProgramSeqService.RequestStop();
+                copySmrProgramService.RequestStop();
                 copyProgramService.RequestStop();                 
-                archiveService.RequestStop();
+                archiveClipService.RequestStop();
                 archiveProgramSeqService.RequestStop();
+                archiveSmrProgramService.RequestStop();
                 archiveProgramService.RequestStop();
-                clipService.RequestStop();
-                programseqService.RequestStop();
-                dailymotionService.RequestStop();
-                youtubeService.RequestStop();
+                programSeqService.RequestStop();
+                //clipService.RequestStop();
+                
+                
+                if (!Singleton.getInstance().Test)
+                {
+                    dailymotionService.RequestStop();
+                    youtubeService.RequestStop();
+                }
+                
             }
             else
             {

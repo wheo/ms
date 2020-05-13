@@ -11,5 +11,6 @@ namespace MBCPLUS_DAEMON
         public String AssetID {get;set;}
         public String VideoID {get;set;}
         public String status { get; set; }
+        public String cid { get; set; }
     }
 }
