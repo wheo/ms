@@ -74,66 +74,57 @@ namespace MBCPLUS_DAEMON
                             
                             programSeqInfo.imgsrcpath = r["imgsrcpath"].ToString();
                             programSeqInfo.orgimgname = r["orgimgname"].ToString();
+                            programSeqInfo.src_cue = r["src_cue"].ToString();
+                            programSeqInfo.org_cue = r["org_cue"].ToString();
+                            programSeqInfo.src_script = r["src_script"].ToString();
+                            programSeqInfo.org_script = r["org_script"].ToString();
                             programSeqInfo.gid = r["gid"].ToString();
                             programSeqInfo.cdn_img = r["cdnurl_img"].ToString();
                             programSeqInfo.archive_date = r["archive_date"].ToString();                            
                             programSeqInfo.section = r["section"].ToString();
                             programSeqInfo.edit_img_count = Convert.ToInt32(r["edit_img_count"].ToString());
+                            programSeqInfo.edit_cue_count = Convert.ToInt32(r["edit_cue_count"].ToString());
+                            programSeqInfo.edit_script_count = Convert.ToInt32(r["edit_script_count"].ToString());
 
                             status = r["status"].ToString();
+                           
+                            mapper.UpdateArchiveServiceRunning(programSeqInfo.gid);
 
-                            if (!String.IsNullOrEmpty( programSeqInfo.imgsrcpath))
+                            frmMain.WriteLogThread(String.Format(@"gid({0}) is Archive", programSeqInfo.gid));
+                            //String targetPath = "";
+
+                            // 스포츠, 예능 구분해야함(프로그램 정보로부터 가져올 수 있음)
+                            StringBuilder sb = new StringBuilder();
+                            if (Singleton.getInstance().Test)
                             {
-                                mapper.UpdateArchiveServiceRunning(programSeqInfo.gid);
+                                sb.Append(Util.getTestPath());
+                            } else
+                            {
+                                sb.Append(Util.getSectionPath(programSeqInfo.section));
+                            }
+                            sb.Append(programSeqInfo.archive_date);
+                            sb.Append(Path.DirectorySeparatorChar);
+                            sb.Append(programSeqInfo.gid);
 
-                                frmMain.WriteLogThread(String.Format(@"gid({0}) is Archive", programSeqInfo.gid));
-                                String targetPath = "";
+                            programSeqInfo.targetpath = sb.ToString();
 
-                                // 스포츠, 예능 구분해야함(프로그램 정보로부터 가져올 수 있음)
-                                StringBuilder sb = new StringBuilder();
-                                if (Singleton.getInstance().Test)
+                            try
+                            {
+                                if (!Directory.Exists(programSeqInfo.targetpath))
                                 {
-                                    sb.Append(Util.getTestPath());
-                                } else
-                                {
-                                    sb.Append(Util.getSectionPath(programSeqInfo.section));
-                                }
-                                sb.Append(programSeqInfo.archive_date);
-                                sb.Append(Path.DirectorySeparatorChar);
-                                sb.Append(programSeqInfo.gid);
-
-                                targetPath = sb.ToString();
-
-                                frmMain.WriteLogThread(targetPath);
-
-                                if (!String.IsNullOrEmpty( programSeqInfo.imgsrcpath))
-                                {
-                                    try
-                                    {
-                                        if (!Directory.Exists(targetPath))
-                                        {
-                                            Directory.CreateDirectory(targetPath);
-                                        }
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        frmMain.WriteLogThread(e.ToString());
-                                    }
-
-                                    String edit_count_string = "";
-                                    String dstpath = "";
-
-                                    //if (ftpInfo.clip_mov_edit_count > 1 && ftpInfo.type.ToLower() == "mov")
-                                    if (programSeqInfo.edit_img_count > 1)
-                                    {
-                                        edit_count_string = String.Format("_{0}", (programSeqInfo.edit_img_count - 1).ToString("D2"));                                        
-                                        
-                                    }
-                                    dstpath = Util.escapedPath(targetPath + Path.DirectorySeparatorChar + programSeqInfo.gid + edit_count_string + Path.GetExtension(programSeqInfo.orgimgname.ToLower()));
-                                    mapper.ArchiveProgramSeq(programSeqInfo.pk, Util.escapedPath(programSeqInfo.imgsrcpath), dstpath, edit_count_string);                                    
+                                    Directory.CreateDirectory(programSeqInfo.targetpath);
                                 }
                             }
-                            else if ( programSeqInfo.cdn_img.Length > 7)
+                            catch (Exception e)
+                            {
+                                frmMain.WriteLogThread(e.ToString());
+                            }
+
+                            frmMain.WriteLogThread(programSeqInfo.targetpath);
+
+                            mapper.ArchiveProgramSeq(programSeqInfo);
+
+                            if (String.IsNullOrEmpty(programSeqInfo.imgsrcpath) && programSeqInfo.cdn_img.Length > 7)
                             {
                                 mapper.UpdateProgramSeqStatus(programSeqInfo.gid, "Completed");
                                 frmMain.WriteLogThread(String.Format(@"[ArchiveProgramService] cdnimg : {0} is already exist, gid = {1}", programSeqInfo.cdn_img, programSeqInfo.gid));

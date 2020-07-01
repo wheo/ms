@@ -12,9 +12,16 @@ namespace MBCPLUS_DAEMON.vo
         public String gid { get; set; }
         public String imgsrcpath { get; set; }
         public String orgimgname { get; set; }
+        public String src_cue { get; set; }
+        public String org_cue { get; set; }
+        public String src_script { get; set; }
+        public String org_script { get; set; }
         public String cdn_img { get; set; }
         public String archive_date { get; set; }
         public String section { get; set; }
+        public String targetpath { get; set; }
         public int edit_img_count {get;set;}
+        public int edit_cue_count { get; set; }
+        public int edit_script_count { get; set; }
     }
 }

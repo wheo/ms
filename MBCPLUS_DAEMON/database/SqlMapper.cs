@@ -446,6 +446,10 @@ namespace MBCPLUS_DAEMON
                                     PS.program_seq_pk
                                     , PS.imgsrcpath
                                     , PS.orgimgname
+                                    , PS.src_cue as src_cue
+                                    , PS.org_cue as org_cue
+                                    , PS.src_script as src_script
+                                    , PS.org_script as org_script
                                     , PS.contentid
                                     , PS.gid
                                     , DATE_FORMAT(PS.insert_time, '%Y\\%m\\%d') AS archive_date
@@ -453,6 +457,8 @@ namespace MBCPLUS_DAEMON
                                     , PS.status
                                     , P.section AS section
                                     , (SELECT COUNT(*) FROM TB_EDIT_INFO E WHERE E.id = PS.gid AND (E.type = 'img' AND E.board_type = 'program_seq')) AS edit_img_count
+                                    , (SELECT COUNT(*) FROM TB_EDIT_INFO E WHERE E.id = PS.gid AND (E.type = 'cue' AND E.board_type = 'program_seq')) AS edit_cue_count
+                                    , (SELECT COUNT(*) FROM TB_EDIT_INFO E WHERE E.id = PS.gid AND (E.type = 'script' AND E.board_type = 'program_seq')) AS edit_script_count
                                     FROM TB_PROGRAM_SEQ PS
                                     LEFT JOIN TB_PROGRAM P ON PS.pid = P.pid
                                     WHERE PS.STATUS = 'Pending'
@@ -479,11 +485,17 @@ namespace MBCPLUS_DAEMON
                                 , P.org_thumb_img as org_thumb_img
                                 , P.src_circle_img as src_circle_img
                                 , P.org_circle_img as org_circle_img
+                                , P.src_highres_img as src_highres_img
+                                , P.org_highres_img as org_highres_img
+                                , P.src_logo_img as src_logo_img
+                                , P.org_logo_img as org_logo_img
                                 , P.status as status
 , (SELECT COUNT(*) FROM TB_EDIT_INFO E WHERE E.id = P.pid AND (E.type = 'img' AND E.board_type = 'program')) AS edit_img_count
 , (SELECT COUNT(*) FROM TB_EDIT_INFO E WHERE E.id = P.pid AND (E.type = 'posterimg' AND E.board_type = 'program')) AS edit_img_poster_count
 , (SELECT COUNT(*) FROM TB_EDIT_INFO E WHERE E.id = P.pid AND (E.type = 'thumbimg' AND E.board_type = 'program')) AS edit_img_thumb_count
 , (SELECT COUNT(*) FROM TB_EDIT_INFO E WHERE E.id = P.pid AND (E.type = 'circleimg' AND E.board_type = 'program')) AS edit_img_circle_count
+, (SELECT COUNT(*) FROM TB_EDIT_INFO E WHERE E.id = P.pid AND (E.type = 'highresimg' AND E.board_type = 'program')) AS edit_img_highres_count
+, (SELECT COUNT(*) FROM TB_EDIT_INFO E WHERE E.id = P.pid AND (E.type = 'logoimg' AND E.board_type = 'program')) AS edit_img_logo_count
                                 FROM TB_PROGRAM P
                                 WHERE 1=1
                                 AND status = 'Pending'
@@ -600,7 +612,119 @@ namespace MBCPLUS_DAEMON
                 cmd.ExecuteNonQuery();
             }
 
+            if (!String.IsNullOrEmpty(programInfo.highresimg))
+            {
+                String edit_count_string = "";
+                if (programInfo.edit_img_highres_count > 1)
+                {
+                    edit_count_string = String.Format("_{0}", (programInfo.edit_img_highres_count - 1).ToString("D2"));
+                }
+
+                m_sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, pid, srcpath, targetpath, type, status, program_img_type, edit_count_tail)
+                                                  VALUES (CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', 'IMG', 'Pending', 5, '{3}')", programInfo.pid
+                                                  , Util.escapedPath(programInfo.highresimg)
+                                                  , Util.escapedPath(programInfo.targetpath + Path.DirectorySeparatorChar + programInfo.pid + "_H" + edit_count_string + Path.GetExtension(programInfo.org_highresimg.ToLower()))
+                                                  , edit_count_string);
+                cmd = new MySqlCommand(m_sql, connPool.getConnection());
+                cmd.ExecuteNonQuery();
+            }
+
+            if (!String.IsNullOrEmpty(programInfo.logoimg))
+            {
+                String edit_count_string = "";
+                if (programInfo.edit_img_logo_count > 1)
+                {
+                    edit_count_string = String.Format("_{0}", (programInfo.edit_img_logo_count - 1).ToString("D2"));
+                }
+
+                m_sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, pid, srcpath, targetpath, type, status, program_img_type, edit_count_tail)
+                                                  VALUES (CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', 'IMG', 'Pending', 6, '{3}')", programInfo.pid
+                                                  , Util.escapedPath(programInfo.logoimg)
+                                                  , Util.escapedPath(programInfo.targetpath + Path.DirectorySeparatorChar + programInfo.pid + "_L" + edit_count_string + Path.GetExtension(programInfo.org_logoimg.ToLower()))
+                                                  , edit_count_string);
+                cmd = new MySqlCommand(m_sql, connPool.getConnection());
+                cmd.ExecuteNonQuery();
+            }
+
             connPool.ConnectionClose();
+            return true;
+        }
+
+        public bool ArchiveProgramSeq(vo.ProgramSeqInfo programSeqInfo)
+        {
+            connPool.ConnectionOpen();
+
+            if (!String.IsNullOrEmpty(programSeqInfo.imgsrcpath))
+            {
+                String edit_count_string = "";
+                String dstpath = "";
+
+                //if (ftpInfo.clip_mov_edit_count > 1 && ftpInfo.type.ToLower() == "mov")
+                if (programSeqInfo.edit_img_count > 1)
+                {
+                    edit_count_string = String.Format("_{0}", (programSeqInfo.edit_img_count - 1).ToString("D2"));
+                }
+                dstpath = Util.escapedPath(programSeqInfo.targetpath + Path.DirectorySeparatorChar + programSeqInfo.gid + edit_count_string + Path.GetExtension(programSeqInfo.orgimgname.ToLower()));
+                //mapper.ArchiveProgramSeq(programSeqInfo.pk, Util.escapedPath(programSeqInfo.imgsrcpath), dstpath, edit_count_string);
+                
+                m_sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, program_seq_pk, srcpath, targetpath, type, status, edit_count_tail)
+                                                VALUES (CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', 'IMG', 'Pending', '{3}')", programSeqInfo.pk
+                            , Util.escapedPath(programSeqInfo.imgsrcpath)
+                            , dstpath
+                            , edit_count_string);
+
+                cmd = new MySqlCommand(m_sql, connPool.getConnection());
+                cmd.ExecuteNonQuery();                
+            }
+
+            if (!String.IsNullOrEmpty(programSeqInfo.src_cue))
+            {
+                String edit_count_string = "";
+                String dstpath = "";
+
+                //if (ftpInfo.clip_mov_edit_count > 1 && ftpInfo.type.ToLower() == "mov")
+                if (programSeqInfo.edit_cue_count > 1)
+                {
+                    edit_count_string = String.Format("_{0}", (programSeqInfo.edit_cue_count - 1).ToString("D2"));
+                }
+                dstpath = Util.escapedPath(programSeqInfo.targetpath + Path.DirectorySeparatorChar + programSeqInfo.gid+ "_CUE" + edit_count_string + Path.GetExtension(programSeqInfo.org_cue.ToLower()));
+                //mapper.ArchiveProgramSeq(programSeqInfo.pk, Util.escapedPath(programSeqInfo.imgsrcpath), dstpath, edit_count_string);
+
+                m_sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, program_seq_pk, srcpath, targetpath, type, status, edit_count_tail)
+                                                VALUES (CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', 'CUE', 'Pending', '{3}')", programSeqInfo.pk
+                            , Util.escapedPath(programSeqInfo.src_cue)
+                            , dstpath
+                            , edit_count_string);
+
+                cmd = new MySqlCommand(m_sql, connPool.getConnection());
+                cmd.ExecuteNonQuery();
+            }
+
+            if (!String.IsNullOrEmpty(programSeqInfo.src_script))
+            {
+                String edit_count_string = "";
+                String dstpath = "";
+
+                //if (ftpInfo.clip_mov_edit_count > 1 && ftpInfo.type.ToLower() == "mov")
+                if (programSeqInfo.edit_script_count > 1)
+                {
+                    edit_count_string = String.Format("_{0}", (programSeqInfo.edit_script_count - 1).ToString("D2"));
+                }
+                dstpath = Util.escapedPath(programSeqInfo.targetpath + Path.DirectorySeparatorChar + programSeqInfo.gid + "_SCRIPT" + edit_count_string + Path.GetExtension(programSeqInfo.org_script.ToLower()));
+                //mapper.ArchiveProgramSeq(programSeqInfo.pk, Util.escapedPath(programSeqInfo.imgsrcpath), dstpath, edit_count_string);
+
+                m_sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, program_seq_pk, srcpath, targetpath, type, status, edit_count_tail)
+                                                VALUES (CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', 'SCRIPT', 'Pending', '{3}')", programSeqInfo.pk
+                            , Util.escapedPath(programSeqInfo.src_script)
+                            , dstpath
+                            , edit_count_string);
+
+                cmd = new MySqlCommand(m_sql, connPool.getConnection());
+                cmd.ExecuteNonQuery();
+            }
+
+            connPool.ConnectionClose();
+
             return true;
         }
 
@@ -1826,6 +1950,13 @@ namespace MBCPLUS_DAEMON
             {
                 target_field = "cdn_circle_img";
             }            
+            else if (img_type == "5")
+            {
+                target_field = "cdn_highres_img";
+            } else if (img_type == "6")
+            {
+                target_field = "cdn_logo_img";
+            }
             connPool.ConnectionOpen();
             m_sql = String.Format(@"UPDATE TB_PROGRAM
                                     SET {2} = '{0}', status = 'Completed'
@@ -1869,12 +2000,25 @@ namespace MBCPLUS_DAEMON
             return true;
         }
 
-        public bool UpdateProgramSeqImg(String full_url, String gid)
+        public bool UpdateProgramSeqCompleted(String full_url, String gid, String type)
         {
+            String target_field = "";
+            if (type.ToLower() == "img")
+            {
+                target_field = "cdnurl_img";
+            }
+            else if (type.ToLower() == "cue")
+            {
+                target_field = "cdnurl_cue";
+            }
+            else if (type.ToLower() == "script")
+            {
+                target_field = "cdnurl_script";
+            }
             connPool.ConnectionOpen();
             m_sql = String.Format(@"UPDATE TB_PROGRAM_SEQ
-                                    SET cdnurl_img = '{0}'
-                                    WHERE gid = '{1}'", full_url, gid);
+                                    SET {2} = '{0}'
+                                    WHERE gid = '{1}'", full_url, gid, target_field);
             cmd = new MySqlCommand(m_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();

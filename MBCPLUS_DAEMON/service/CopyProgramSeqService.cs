@@ -104,9 +104,28 @@ namespace MBCPLUS_DAEMON
                             //Z:\mbcplus\archive\sports\2016\10\31\GA201610310001\CA201610310001\160824_0824_모비스vs동부_C_05_2쿼터_모처럼_속공_성공시키는_전준범.mp4
                             String convert_targetpath = m_dstpath.Substring(2, m_dstpath.Length - 2).Replace('\\', '/');
 
+                            String type_name = "";
+                            String tail = "";
+
+                            if (type.ToLower() == "img")
+                            {
+                                type_name = "archive_img";
+                                tail = "";
+                            }
+                            else if (type.ToLower() == "cue")
+                            {
+                                type_name = "archive_cue";
+                                tail = "_CUE";
+                            }
+                            else if (type.ToLower() == "script")
+                            {
+                                type_name = "archive_script";
+                                tail = "_SCRIPT";
+                            }                            
+
                             frmMain.WriteLogThread(convert_targetpath);
                             connPool.ConnectionOpen();
-                            m_sql = String.Format(@"UPDATE TB_PROGRAM_SEQ SET archive_img = '{0}' WHERE program_seq_pk = '{1}'", convert_targetpath, m_program_seq_pk);
+                            m_sql = String.Format(@"UPDATE TB_PROGRAM_SEQ SET {2} = '{0}' WHERE program_seq_pk = '{1}'", convert_targetpath, m_program_seq_pk, type_name);
                             cmd = new MySqlCommand(m_sql, connPool.getConnection());
                             cmd.ExecuteNonQuery();
                             connPool.ConnectionClose();
@@ -134,10 +153,10 @@ namespace MBCPLUS_DAEMON
                             String FileName = "";
                             if (String.IsNullOrEmpty(m_edit_count_tail))
                             {
-                                FileName = String.Format("{0}{1}", m_gid.ToUpper(), Path.GetExtension(m_dstpath));
+                                FileName = String.Format("{0}{1}{2}", m_gid.ToUpper(), tail, Path.GetExtension(m_dstpath));
                             } else
                             {
-                                FileName = String.Format("{0}{1}{2}", m_gid.ToUpper(), m_edit_count_tail, Path.GetExtension(m_dstpath));
+                                FileName = String.Format("{0}{1}{2}{3}", m_gid.ToUpper(), tail, m_edit_count_tail, Path.GetExtension(m_dstpath));
                             }
                             // 회차 이미지는 customer_id : 2  LG_CDN으로 보냄
                             connPool.ConnectionOpen();

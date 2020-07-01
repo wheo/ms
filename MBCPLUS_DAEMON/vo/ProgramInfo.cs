@@ -18,9 +18,15 @@ namespace MBCPLUS_DAEMON.vo
         public String org_thumbimg { get; set; }
         public String circleimg { get; set; }
         public String org_circleimg { get; set; }
+        public String highresimg { get; set; }
+        public String org_highresimg { get; set; }
+        public String logoimg { get; set; }
+        public string org_logoimg { get; set; }
         public int edit_img_count { get; set; }
         public int edit_img_poster_count { get; set; }
         public int edit_img_thumb_count { get; set; }
         public int edit_img_circle_count { get; set; }
+        public int edit_img_highres_count { get; set; }
+        public int edit_img_logo_count { get; set; }
     }
 }

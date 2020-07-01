@@ -77,7 +77,6 @@ namespace MBCPLUS_DAEMON
                         type = r["type"].ToString();
                         img_type = r["program_img_type"].ToString();
 
-
                         connPool.ConnectionOpen();
                         m_sql = String.Format("UPDATE TB_ARCHIVE SET starttime = CURRENT_TIMESTAMP(), status = 'Running' WHERE archive_pk = '{0}'", pk);
                         //Running 으로 변경
@@ -128,7 +127,17 @@ namespace MBCPLUS_DAEMON
                             {
                                 img_type_name = "archive_circle_img";
                                 tail = "_C";
-                            }                            
+                            }  
+                            else if ( img_type == "5")
+                            {
+                                img_type_name = "archive_highres_img";
+                                tail = "_H";
+                            }
+                            else if ( img_type == "6")
+                            {
+                                img_type_name = "archive_logo_img";
+                                tail = "_L";
+                            }
                             if (!String.IsNullOrEmpty(img_type_name))
                             {
                                 connPool.ConnectionOpen();

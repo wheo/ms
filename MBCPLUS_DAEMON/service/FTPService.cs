@@ -674,7 +674,7 @@ namespace MBCPLUS_DAEMON
                                         log.logging("cdnresponse : " + cdnresponse);
                                         mapper.UpdateCDNURL(ftpInfo.type, full_url, ftpInfo.clip_pk);
                                     }
-
+                                    
                                     if (!String.IsNullOrEmpty(ftpInfo.cid) && ftpInfo.type.ToLower().Equals("yt_srt"))
                                     {
                                         //유튜브 자막파일 SRT
@@ -804,10 +804,36 @@ namespace MBCPLUS_DAEMON
 
                                         // 회차 이미지 업데이트
                                         frmMain.WriteLogThread("[FTPService] 회차 이미지 업데이트 되었습니다. : " + ftpInfo.gid);
-                                        mapper.UpdateProgramSeqImg(full_url, ftpInfo.gid);
+                                        mapper.UpdateProgramSeqCompleted(full_url, ftpInfo.gid, ftpInfo.type);
 
                                         mapper.UpdateProgramSeqStatus(ftpInfo.gid, "Completed");
                                     }
+
+                                    if (!String.IsNullOrEmpty(ftpInfo.gid) && String.IsNullOrEmpty(ftpInfo.cid) && ftpInfo.type.ToLower().Equals("cue"))
+                                    {
+                                        //회차 큐시트 파일
+                                        apiPurgeDomain = "http://Mov.mbcmpp.co.kr";
+                                        cdnapi = cdninfo.apiDomain + "?user_id=" + cdninfo.apiUserid + "&passwd=" + cdninfo.apiPasswd + "&action=" + cdninfo.apiAction + "&purge_domain=" + apiPurgeDomain + "&purge_url=" + apiFtpPath;
+                                        log.logging("cdnapi : " + cdnapi);
+                                        cdnresponse = Http.Get(cdnapi);
+                                        log.logging("cdnresponse : " + cdnresponse);
+                                        mapper.UpdateProgramSeqCompleted(full_url, ftpInfo.gid, ftpInfo.type);
+                                        mapper.UpdateProgramSeqStatus(ftpInfo.gid, "Completed");
+                                    }
+
+                                    if (!String.IsNullOrEmpty(ftpInfo.gid) && String.IsNullOrEmpty(ftpInfo.cid) && ftpInfo.type.ToLower().Equals("script"))
+                                    {
+                                        //회차 대본 파일
+                                        apiPurgeDomain = "http://Mov.mbcmpp.co.kr";
+                                        cdnapi = cdninfo.apiDomain + "?user_id=" + cdninfo.apiUserid + "&passwd=" + cdninfo.apiPasswd + "&action=" + cdninfo.apiAction + "&purge_domain=" + apiPurgeDomain + "&purge_url=" + apiFtpPath;
+                                        log.logging("cdnapi : " + cdnapi);
+                                        cdnresponse = Http.Get(cdnapi);
+                                        log.logging("cdnresponse : " + cdnresponse);
+
+                                        mapper.UpdateProgramSeqCompleted(full_url, ftpInfo.gid, ftpInfo.type);
+                                        mapper.UpdateProgramSeqStatus(ftpInfo.gid, "Completed");
+                                    }
+
                                 }
 
                                 if (ftpInfo.transcoding_YN == "Y") // 현재 customer_id : 1 (BBMC만 transcode_YN = Y)

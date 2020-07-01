@@ -92,7 +92,6 @@ namespace MBCPLUS_DAEMON
                             dm_videoid = r["dm_videoid"].ToString();
                             edit_count_tail = r["edit_count_tail"].ToString();
 
-
                             connPool.ConnectionOpen();
                             m_sql = String.Format("UPDATE TB_ARCHIVE SET starttime = CURRENT_TIMESTAMP(), status = 'Running' WHERE archive_pk = '{0}'", pk);
                             //Running 으로 변경

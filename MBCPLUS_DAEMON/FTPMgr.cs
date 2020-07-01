@@ -414,7 +414,7 @@ namespace MBCPLUS_DAEMON
                     log.logging("[FTPMgr] code description : " + responseMkdir.StatusDescription.ToString());
                     responseMkdir.Close();                    
                 }
-                catch (Exception e)
+                catch 
                 {
                     //frmMain.WriteLogThread("[FTPMgr:MakeDir] " + e.ToString());
                     //log.logging(e.ToString());
