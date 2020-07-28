@@ -14,10 +14,9 @@ using Newtonsoft.Json.Linq;
 
 namespace MBCPLUS_DAEMON
 {
-    class ArchiveSmrProgramService
+    internal class ArchiveSmrProgramService
     {
-        private Boolean _shouldStop = false;        
-        private ConnectionPool connPool;
+        private Boolean _shouldStop = false;
         private SqlMapper mapper;
 
         private Log log;
@@ -30,7 +29,7 @@ namespace MBCPLUS_DAEMON
             DoWork();
         }
 
-        void DoWork()
+        private void DoWork()
         {
             Thread t1 = new Thread(new ThreadStart(Run));
             t1.Start();
@@ -38,18 +37,14 @@ namespace MBCPLUS_DAEMON
 
         public void RequestStop()
         {
-            _shouldStop = true;            
+            _shouldStop = true;
         }
 
-        void Run()
-        {   
-            DataSet ds = new DataSet();            
+        private void Run()
+        {
+            DataSet ds = new DataSet();
             String status = null;
-            //MySqlCommand cmd;
 
-            connPool = new ConnectionPool();
-            connPool.SetConnection(new MySqlConnection(Singleton.getInstance().GetStrConn()));
-            
             //Waiting for make winform
             Thread.Sleep(5000);
             //frmMain.WriteLogThread("Programseq Archive Service Start...");
@@ -61,7 +56,7 @@ namespace MBCPLUS_DAEMON
                 {
                     mapper.GetProgramSmrService(ds);
                     foreach (DataRow r in ds.Tables[0].Rows)
-                    {                        
+                    {
                         //String pid = r["pid"].ToString();
                         // ADD log
                         vo.SmrProgramInfo smrProgramInfo = new vo.SmrProgramInfo();
@@ -76,8 +71,8 @@ namespace MBCPLUS_DAEMON
                         smrProgramInfo.bannerimg = r["bannerimg"].ToString();
                         smrProgramInfo.org_bannerimg = r["org_bannerimg"].ToString();
                         smrProgramInfo.thumbimg = r["thumbimg"].ToString();
-                        smrProgramInfo.org_thumbimg = r["org_thumbimg"].ToString();             
-                        
+                        smrProgramInfo.org_thumbimg = r["org_thumbimg"].ToString();
+
                         smrProgramInfo.edit_img_count = Convert.ToInt32(r["edit_img_count"].ToString());
                         smrProgramInfo.edit_img_poster1_count = Convert.ToInt32(r["edit_img_poster1_count"].ToString());
                         smrProgramInfo.edit_img_poster2_count = Convert.ToInt32(r["edit_img_poster2_count"].ToString());
@@ -94,23 +89,24 @@ namespace MBCPLUS_DAEMON
                             mapper.SetArchiveSmrProgramServiceRunning(smrProgramInfo.pid);
 
                             //frmMain.WriteLogThread(String.Format(@"[ProgramArchiveService] pid ({0}) is Archive", pid));
-                            log.logging(String.Format("{0} is archiving",smrProgramInfo.pid) );
+                            log.logging(String.Format("{0} is archiving", smrProgramInfo.pid));
 
                             // 스포츠, 예능 구분해야함(프로그램 정보로부터 가져올 수 있음)
                             StringBuilder sb = new StringBuilder();
                             if (Singleton.getInstance().Test)
                             {
                                 sb.Append(@"Z:\mbcplus\archive\test\smr_program");
-                            } else
+                            }
+                            else
                             {
                                 sb.Append(@"Z:\mbcplus\archive\smr_program");
                             }
-                            sb.Append(Path.DirectorySeparatorChar);                            
+                            sb.Append(Path.DirectorySeparatorChar);
                             sb.Append(smrProgramInfo.pid);
 
                             smrProgramInfo.targetpath = sb.ToString();
-                            log.logging(String.Format("{0}", smrProgramInfo.ToString() ));
-                                
+                            log.logging(String.Format("{0}", smrProgramInfo.ToString()));
+
                             try
                             {
                                 if (!Directory.Exists(smrProgramInfo.targetpath))
@@ -132,11 +128,11 @@ namespace MBCPLUS_DAEMON
                             connPool.ConnectionClose();
                             */
                             mapper.ArchiveSmrProgram(smrProgramInfo);
-                            
+
                             //이미지가 없을 땐 Status를 Completed로 변경
-                            mapper.UpdateSmrProgramStatus ("Completed", smrProgramInfo.pid);
+                            mapper.UpdateSmrProgramStatus("Completed", smrProgramInfo.pid);
                             //frmMain.WriteLogThread("[ProgramSmrService] " + smrProgramInfo.pid + " img not found");
-                            //log.logging(String.Format("{0} img is not found", smrProgramInfo.pid) );                            
+                            //log.logging(String.Format("{0} img is not found", smrProgramInfo.pid) );
                         }
                     }
                 }
@@ -148,7 +144,7 @@ namespace MBCPLUS_DAEMON
                 Thread.Sleep(1000);
                 ds.Clear();
             }
-            connPool.ConnectionDisPose();
+
             log.logging("Thread Terminate");
         }
     }

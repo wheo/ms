@@ -14,15 +14,15 @@ using Newtonsoft.Json.Linq;
 
 namespace MBCPLUS_DAEMON
 {
-    class ClipService
+    internal class ClipService
     {
-        private Boolean _shouldStop = false;        
+        private Boolean _shouldStop = false;
+
         //private String m_imgsrcpath;
         //private String m_clipsrcpath;
-        //private String m_dstpath;        
-        private String m_pk;        
-        private String m_sql = "";
-        private ConnectionPool connPool;
+        //private String m_dstpath;
+        private String m_pk;
+
         private SqlMapper mapper;
 
         private Log log;
@@ -37,7 +37,7 @@ namespace MBCPLUS_DAEMON
             DoWork();
         }
 
-        void DoWork()
+        private void DoWork()
         {
             Thread t1 = new Thread(new ThreadStart(Run));
             t1.Start();
@@ -45,20 +45,16 @@ namespace MBCPLUS_DAEMON
 
         public void RequestStop()
         {
-            _shouldStop = true;            
+            _shouldStop = true;
         }
 
-        void Run()
+        private void Run()
         {
             DataSet ds = new DataSet();
-            DataSet ds_clip_YN = new DataSet();            
-            MySqlCommand cmd;
-
-            connPool = new ConnectionPool();
-            connPool.SetConnection(new MySqlConnection(Singleton.getInstance().GetStrConn()));
+            DataSet ds_clip_YN = new DataSet();
 
             String strBaseUri = "http://metaapi.mbcmedia.net:5000/SMRMetaCollect.svc/";
-            
+
             //Waiting for make winform
             Thread.Sleep(5000);
             //frmMain.WriteLogThread("Clip Service Start...");
@@ -81,8 +77,8 @@ namespace MBCPLUS_DAEMON
                         String title = r["title"].ToString();
                         String synopsis = r["synopsis"].ToString();
                         String searchkeyword = r["searchkeyword"].ToString();
-                        //String mediadomain = "http://mbcplus-dn.dl.cdn.cloudn.co.kr";                        
-                        String mediadomain = "http://mov.mbcmpp.co.kr"; // 2017-11-22 재개                     
+                        //String mediadomain = "http://mbcplus-dn.dl.cdn.cloudn.co.kr";
+                        String mediadomain = "http://mov.mbcmpp.co.kr"; // 2017-11-22 재개
                         String img_mediadomain = "http://Img.mbcmpp.co.kr"; // 2017-11-22 재개
                         String itemtypeid = r["itemtypeid"].ToString();
                         String cliptype = r["cliptype"].ToString();
@@ -124,7 +120,7 @@ namespace MBCPLUS_DAEMON
                         String actor = r["actor"].ToString();
                         //String contentimg = "/ATTACHMENT/SMR/IMAGE/A000000308/2016/10/17/T9201610170109.jpg";
 
-                        //ADD LOG                        
+                        //ADD LOG
                         String orgimgname = r["orgimgname"].ToString();
                         String orgclipname = r["orgclipname"].ToString();
                         String imgsrcpath = r["imgsrcpath"].ToString();
@@ -135,17 +131,19 @@ namespace MBCPLUS_DAEMON
                         log.logging("[CLIPService] imgsrcpath : " + imgsrcpath);
                         log.logging("[CLIPService] clipsrcpath : " + clipsrcpath);
 
-                        //log.logging(m_sql);                        
+                        //log.logging(m_sql);
                         //Ready 상태 찾기
                         try
                         {
                             //Ready -> MetaSending 으로 변경
-                            m_sql = String.Format("UPDATE TB_CLIP SET starttime = CURRENT_TIMESTAMP(), status = 'MetaSending' WHERE clip_pk = '{0}'", m_pk);
-                            
-                            connPool.ConnectionOpen();
-                            cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                            cmd.ExecuteNonQuery();
-                            connPool.ConnectionClose();
+                            string sql = String.Format("UPDATE TB_CLIP SET starttime = CURRENT_TIMESTAMP(), status = 'MetaSending' WHERE clip_pk = '{0}'", m_pk);
+
+                            using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
+                            {
+                                conn.Open();
+                                MySqlCommand cmd = new MySqlCommand(sql, conn);
+                                cmd.ExecuteNonQuery();
+                            }
 
                             frmMain.WriteLogThread(String.Format(@"[ClipService] clip_pk({0}) is Running", m_pk));
                             JObject metaJson = new JObject(
@@ -201,7 +199,7 @@ namespace MBCPLUS_DAEMON
                             //frmMain.WriteLogThread("clip id is " + clipid);
                             if (!String.IsNullOrEmpty(clipid))
                             {
-                                // clipid 가 있으면 Update                            
+                                // clipid 가 있으면 Update
                                 uri = strBaseUri + "UpdateClipMediaMeta";
                                 strJson = metaJson.ToString();
                             }
@@ -246,49 +244,58 @@ namespace MBCPLUS_DAEMON
                                     metaSuccess = false;
                                 }
                             }
-                            log.logging(String.Format("[ClipService] ({0}) primarykey is : {1}",cid, primarykey));
+                            log.logging(String.Format("[ClipService] ({0}) primarykey is : {1}", cid, primarykey));
+
+                            string _sql = "";
+
                             if (metaSuccess)
                             {
                                 // primarykey 1 이면 update
                                 if (primarykey == "1")
                                 {
-                                    m_sql = String.Format("UPDATE TB_CLIP SET endtime = CURRENT_TIMESTAMP(), status = 'Completed' WHERE clip_pk = '{0}'", m_pk);
+                                    _sql = String.Format("UPDATE TB_CLIP SET endtime = CURRENT_TIMESTAMP(), status = 'Completed' WHERE clip_pk = '{0}'", m_pk);
                                 }
                                 else if (!String.IsNullOrEmpty(primarykey)) // primarykey 가 있으면 update
                                 {
-                                    m_sql = String.Format("UPDATE TB_CLIP SET endtime = CURRENT_TIMESTAMP(), status = 'Completed', clipid = '{0}' WHERE clip_pk = '{1}'", primarykey, m_pk);
+                                    _sql = String.Format("UPDATE TB_CLIP SET endtime = CURRENT_TIMESTAMP(), status = 'Completed', clipid = '{0}' WHERE clip_pk = '{1}'", primarykey, m_pk);
                                 }
                                 //Completed 으로 변경
-                                connPool.ConnectionOpen();
-                                cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                                cmd.ExecuteNonQuery();
-                                connPool.ConnectionClose();
+                                using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
+                                {
+                                    conn.Open();
+                                    MySqlCommand cmd = new MySqlCommand(_sql, conn);
+                                    cmd.ExecuteNonQuery();
+                                }
                                 frmMain.WriteLogThread(String.Format(@"[ClipService] clip_pk({0}) is Completed", m_pk));
                                 log.logging(String.Format(@"[ClipService] clip_pk({0}) is Completed", m_pk));
                             }
                             else
                             {
-                                connPool.ConnectionOpen();
-                                m_sql = String.Format("UPDATE TB_CLIP SET endtime = CURRENT_TIMESTAMP(), status = 'Failed' WHERE clip_pk = '{0}'", m_pk);
-                                //Failed로 변경
-                                cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                                cmd.ExecuteNonQuery();
-                                connPool.ConnectionClose();
+                                using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
+                                {
+                                    conn.Open();
+                                    _sql = String.Format("UPDATE TB_CLIP SET endtime = CURRENT_TIMESTAMP(), status = 'Failed' WHERE clip_pk = '{0}'", m_pk);
+                                    //Failed로 변경
+                                    MySqlCommand cmd = new MySqlCommand(_sql, conn);
+                                    cmd.ExecuteNonQuery();
+                                }
                                 frmMain.WriteLogThread(String.Format(@"clip_pk({0}) is Failed", m_pk));
                             }
                         }
                         catch (Exception e)
                         {
-                            connPool.ConnectionOpen();
-                            m_sql = String.Format("UPDATE TB_CLIP SET endtime = CURRENT_TIMESTAMP(), status = 'Failed' WHERE clip_pk = '{0}'", m_pk);
-                            //Failed로 변경
-                            cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                            cmd.ExecuteNonQuery();
-                            connPool.ConnectionClose();
+                            using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
+                            {
+                                conn.Open();
+                                string sql = String.Format("UPDATE TB_CLIP SET endtime = CURRENT_TIMESTAMP(), status = 'Failed' WHERE clip_pk = '{0}'", m_pk);
+                                //Failed로 변경
+                                MySqlCommand cmd = new MySqlCommand(sql, conn);
+                                cmd.ExecuteNonQuery();
+                            }
                             frmMain.WriteLogThread(String.Format(@"[ClipService] clip_pk({0}) is Failed", m_pk));
                             log.logging(String.Format(@"[ClipService] clip_pk({0}) is Failed", m_pk));
                             log.logging("[ClipService] " + e.ToString());
-                        }                        
+                        }
                     }
                 }
                 catch (Exception e)
@@ -299,7 +306,7 @@ namespace MBCPLUS_DAEMON
                 Thread.Sleep(1000);
                 ds.Clear();
             }
-            connPool.ConnectionDisPose();
+
             log.logging("Thread Terminate");
         }
     }

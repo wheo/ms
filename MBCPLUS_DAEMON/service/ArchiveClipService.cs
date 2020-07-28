@@ -13,11 +13,10 @@ using MediaInfoLib;
 
 namespace MBCPLUS_DAEMON
 {
-    class ArchiveClipService
-    {        
+    internal class ArchiveClipService
+    {
         private Boolean _shouldStop = false;
-        
-        private ConnectionPool connPool;
+
         private Log log;
         private SqlMapper mapper;
         private String m_sql = "";
@@ -30,7 +29,7 @@ namespace MBCPLUS_DAEMON
             DoWork();
         }
 
-        void DoWork()
+        private void DoWork()
         {
             Thread t1 = new Thread(new ThreadStart(Run));
             t1.Start();
@@ -38,12 +37,12 @@ namespace MBCPLUS_DAEMON
 
         public void RequestStop()
         {
-            _shouldStop = true;            
-        }        
+            _shouldStop = true;
+        }
 
         public MediaInfomation ExtractInformation(String strSourcePath)
         {
-            //int duration = 0;            
+            //int duration = 0;
             MediaInfomation mediainfo = new MediaInfomation();
             try
             {
@@ -69,7 +68,7 @@ namespace MBCPLUS_DAEMON
                     mediainfo.v_resolution_x = pMi.Get(StreamKind.Video, 0, "Width");
                     mediainfo.v_resolution_y = pMi.Get(StreamKind.Video, 0, "Height");
                     mediainfo.a_codec = pMi.Get(StreamKind.Audio, 0, "Codec");
-                    mediainfo.a_bitrate = pMi.Get(StreamKind.Audio, 0, "BitRate/String");                    
+                    mediainfo.a_bitrate = pMi.Get(StreamKind.Audio, 0, "BitRate/String");
                     pMi.Close();
 
                     mediainfo.duration = (Convert.ToInt32(mediainfo.duration) / 1000).ToString();
@@ -87,7 +86,7 @@ namespace MBCPLUS_DAEMON
                     frmMain.WriteLogThread("[MediaInfo] v_width : " + mediainfo.v_resolution_x);
                     frmMain.WriteLogThread("[MediaInfo] v_height : " + mediainfo.v_resolution_y);
                     frmMain.WriteLogThread("[MediaInfo] a_codec : " + mediainfo.a_codec);
-                    frmMain.WriteLogThread("[MediaInfo] a_bitrate : " + mediainfo.a_bitrate);                        
+                    frmMain.WriteLogThread("[MediaInfo] a_bitrate : " + mediainfo.a_bitrate);
                      */
                 }
             }
@@ -101,14 +100,9 @@ namespace MBCPLUS_DAEMON
             return mediainfo;
         }
 
-        void Run()
-        {               
+        private void Run()
+        {
             //String status = null;
-            MySqlCommand cmd;
-
-            connPool = Singleton.getInstance().GetConnectionPool();
-            connPool.SetConnection(new MySqlConnection(Singleton.getInstance().GetStrConn()));
-            
             //Waiting for make winform
             Thread.Sleep(10000);
             //frmMain.WriteLogThread("Archive Clip Service Start...");
@@ -123,7 +117,7 @@ namespace MBCPLUS_DAEMON
                     mapper.GetArchiveClipService(ds);
 
                     foreach (DataRow r in ds.Tables[0].Rows)
-                    {                        
+                    {
                         try
                         {
                             clipInfo.clip_pk = r["clip_pk"].ToString();
@@ -175,7 +169,7 @@ namespace MBCPLUS_DAEMON
                             if (clipInfo.clipsrcpath != "")
                             {
                                 clipInfo.clipsrcpath = String.Format(@"Z:{0}", clipInfo.clipsrcpath.Substring(2, clipInfo.clipsrcpath.Length - 2));
-                                if ( clipInfo.orgclipname == "")
+                                if (clipInfo.orgclipname == "")
                                 {
                                     clipInfo.orgclipname = Path.GetFileName(clipInfo.clipsrcpath);
                                 }
@@ -187,8 +181,8 @@ namespace MBCPLUS_DAEMON
                                 MediaInfomation mediainfo = new MediaInfomation();
                                 mediainfo = ExtractInformation(clipInfo.clipsrcpath);
                                 mapper.UpdateClipInfos(clipInfo.cid, mediainfo);
-                            }                                                 
-                            
+                            }
+
                             //log.logging(String.Format(@"[ArchiveService] cid ({0}) is Archived", clipInfo.cid));
 
                             String targetPath = "";
@@ -197,7 +191,8 @@ namespace MBCPLUS_DAEMON
                             if (Singleton.getInstance().Test)
                             {
                                 sb.Append(Util.getTestPath());
-                            } else
+                            }
+                            else
                             {
                                 sb.Append(Util.getSectionPath(clipInfo.section));
                             }
@@ -232,14 +227,15 @@ namespace MBCPLUS_DAEMON
                                 String dstpath = "";
 
                                 if (clipInfo.isvod == "Y")
-                                {                                
+                                {
                                     //if (ftpInfo.clip_mov_edit_count > 1 && ftpInfo.type.ToLower() == "mov")
-                                    if (clipInfo.edit_vod_img_count > 1 )
+                                    if (clipInfo.edit_vod_img_count > 1)
                                     {
                                         edit_count_string = String.Format("_{0}", (clipInfo.edit_vod_img_count - 1).ToString("D2"));
-                                        //ftpInfo.targetfilename = String.Format("{0}{1}{2}", Path.GetFileNameWithoutExtension(ftpInfo.targetfilename), edit_count_title, Path.GetExtension(ftpInfo.targetfilename));                                        
-                                    }                                     
-                                } else
+                                        //ftpInfo.targetfilename = String.Format("{0}{1}{2}", Path.GetFileNameWithoutExtension(ftpInfo.targetfilename), edit_count_title, Path.GetExtension(ftpInfo.targetfilename));
+                                    }
+                                }
+                                else
                                 {
                                     if (clipInfo.edit_img_count > 1)
                                     {
@@ -256,7 +252,7 @@ namespace MBCPLUS_DAEMON
                             else if (clipInfo.cdnimg.Length > 7)
                             {
                                 // 이미 cdn에 이미지가 올라 갔다고 판단 되었을 때
-                                if (!String.IsNullOrEmpty(clipInfo.clipsrcpath) && File.Exists(clipInfo.clipsrcpath) )
+                                if (!String.IsNullOrEmpty(clipInfo.clipsrcpath) && File.Exists(clipInfo.clipsrcpath))
                                 {
                                     /*
                                     connPool.ConnectionOpen();
@@ -306,11 +302,11 @@ namespace MBCPLUS_DAEMON
                                 String edit_count_string = "";
                                 mapper.ArchiveClip(clipInfo.clip_pk
                                     , Util.escapedPath(clipInfo.yt_upload_img)
-                                    , Util.escapedPath(targetPath + Path.DirectorySeparatorChar + clipInfo.cid +"_YT1" + Path.GetExtension(clipInfo.yt_org_img.ToLower()))
+                                    , Util.escapedPath(targetPath + Path.DirectorySeparatorChar + clipInfo.cid + "_YT1" + Path.GetExtension(clipInfo.yt_org_img.ToLower()))
                                     , "YT_IMG"
                                     , clipInfo.cid
                                     , edit_count_string);
-                            }                            
+                            }
 
                             //자막
                             if (!String.IsNullOrEmpty(clipInfo.subtitlesrcpath) && File.Exists(clipInfo.subtitlesrcpath))
@@ -417,10 +413,10 @@ namespace MBCPLUS_DAEMON
                                     String edit_count_string = "";
                                     mapper.ArchiveClip(clipInfo.clip_pk
                                         , Util.escapedPath(ytItem.upload_path)
-                                        , Util.escapedPath(targetPath + Path.DirectorySeparatorChar + ytItem.cid + "_" + suffix + Path.GetExtension(ytItem.upload_path.ToLower()))                                        
+                                        , Util.escapedPath(targetPath + Path.DirectorySeparatorChar + ytItem.cid + "_" + suffix + Path.GetExtension(ytItem.upload_path.ToLower()))
                                         , suffix
                                         , ytItem.cid
-                                        , edit_count_string);                                    
+                                        , edit_count_string);
                                 }
                             }
 
@@ -449,7 +445,7 @@ namespace MBCPLUS_DAEMON
                                     if (clipInfo.edit_vod_clip_count > 1)
                                     {
                                         edit_count_string = String.Format("_{0}", (clipInfo.edit_vod_clip_count - 1).ToString("D2"));
-                                        //ftpInfo.targetfilename = String.Format("{0}{1}{2}", Path.GetFileNameWithoutExtension(ftpInfo.targetfilename), edit_count_title, Path.GetExtension(ftpInfo.targetfilename));                                        
+                                        //ftpInfo.targetfilename = String.Format("{0}{1}{2}", Path.GetFileNameWithoutExtension(ftpInfo.targetfilename), edit_count_title, Path.GetExtension(ftpInfo.targetfilename));
                                     }
                                 }
                                 else
@@ -467,7 +463,7 @@ namespace MBCPLUS_DAEMON
                                     , "MOV"
                                     , clipInfo.cid
                                     , edit_count_string);
-                            }                            
+                            }
                             else if (clipInfo.cdnmov.Length > 7)
                             {
                                 // CDN에 영상이 이미 있는 경우
@@ -476,17 +472,17 @@ namespace MBCPLUS_DAEMON
                                 {
                                     String srcPath = null;
                                     // 셋중에 하나라도 Y일경우 check
-                                    if ( String.IsNullOrEmpty(clipInfo.clipsrcpath) && mapper.GetIdolChampCheck(clipInfo.cid))
+                                    if (String.IsNullOrEmpty(clipInfo.clipsrcpath) && mapper.GetIdolChampCheck(clipInfo.cid))
                                     {
-                                        
                                     }
                                     else
                                     {
                                         //추가 트랜스코딩을 요청해야함 (어떤 데이터로??)
                                         if (mapper.SetAdditionalTranscoding(clipInfo.clip_pk, clipInfo.gid, clipInfo.cid, out srcPath))
-                                        {                                            
-                                            // 실행 완료                                            
-                                        } else
+                                        {
+                                            // 실행 완료
+                                        }
+                                        else
                                         {
                                             // 트랜젝션 롤백
                                             // srcPath = null
@@ -504,21 +500,15 @@ namespace MBCPLUS_DAEMON
                                 {
                                     m_sql = String.Format("UPDATE TB_CLIP SET endtime = CURRENT_TIMESTAMP(), status = 'Completed' WHERE clip_pk = '{0}'", clipInfo.clip_pk);
                                 }*/
-                                
+
                                 mapper.UpdateClipStatus(clipInfo.cid, "Completed");
-                                
+
                                 frmMain.WriteLogThread(String.Format(@"[ArchiveService] cdnmov : {0} is already exist, cid = {1}", clipInfo.cdnmov, clipInfo.cid));
 
-                                //XML은 재전송 될 수 있게 Pending으로 변경                                
-                                connPool.ConnectionOpen();
-                                m_sql = String.Format(@"UPDATE TB_FTP_QUEUE
-                                                SET starttime = CURRENT_TIMESTAMP()
-                                                , status = 'Pending'
-                                                WHERE clip_pk = '{0}'
-                                                AND type = 'XML'", clipInfo.clip_pk);
-                                cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                                cmd.ExecuteNonQuery();
-                                connPool.ConnectionClose();
+                                //XML은 재전송 될 수 있게 Pending으로 변경
+
+                                mapper.UpdateFTPXmlPending(clipInfo.clip_pk);
+
                                 frmMain.WriteLogThread(String.Format(@"[ArchiveService] clip_pk({0}) XML changed Pending", clipInfo.clip_pk));
                             }
                             else
@@ -592,7 +582,7 @@ namespace MBCPLUS_DAEMON
                 }
                 Thread.Sleep(1000);
             }
-            connPool.ConnectionDisPose();
+
             log.logging("Thread Terminate");
         }
     }

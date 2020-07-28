@@ -14,16 +14,18 @@ using Newtonsoft.Json.Linq;
 
 namespace MBCPLUS_DAEMON
 {
-    class FTPService
+    internal class FTPService
     {
         private Boolean _shouldStop = false;
+
         // put this className
         private Log log;
+
         private Object lockObject = new Object();
 
         public FTPService()
         {
-            DoWork();            
+            DoWork();
         }
 
         public FTPService(int sleeptime)
@@ -31,15 +33,15 @@ namespace MBCPLUS_DAEMON
             Thread.Sleep(sleeptime);
             DoWork();
         }
-        
-        void DoWork()
+
+        private void DoWork()
         {
             log = new Log(this.GetType().Name);
             Thread t1 = new Thread(() => Run("normal"));
             Thread t2 = new Thread(() => Run("normal"));
             Thread t3 = new Thread(() => Run("yt"));
             Thread t4 = new Thread(() => Run("dm"));
-            
+
             t1.Start();
             Thread.Sleep(1000);
             t2.Start();
@@ -53,13 +55,14 @@ namespace MBCPLUS_DAEMON
         {
             _shouldStop = true;
         }
+
         private void GetFullPathUrl(CdnInfo cdninfo, String type, out String full_url, out String rtmp_url, out String hls_url, String target_path, String target_filename)
         {
             full_url = "";
             rtmp_url = "";
             hls_url = "";
             String accessCheck = "";
-            String strFTPid = "";            
+            String strFTPid = "";
             JObject obj;
 
             if (type.ToLower().Equals("mov"))
@@ -73,11 +76,12 @@ namespace MBCPLUS_DAEMON
             else if (type.ToLower().Equals("srt"))
             {
                 strFTPid = "mbcplus_mbcplus-img"; // srt
-            } else
+            }
+            else
             {
                 strFTPid = "mbcplus_mbcplus-img"; // yt_img, yt_srt 포함
             }
-            
+
             // apiFtpPath : 상대주소 mbcplus/...../파일이름720p2M.mp4
             String apiFtpPath = String.Format(@"{0}/{1}", target_path, target_filename);
             String pathfilename = apiFtpPath;
@@ -110,9 +114,9 @@ namespace MBCPLUS_DAEMON
             {
                 log.logging("Parse Error : " + e.ToString());
             }
-            
+
             log.logging("accessCheck : " + accessCheck);
-            log.logging("full_url : " + full_url);            
+            log.logging("full_url : " + full_url);
 
             //mbcplus_mbcplus-img / mbcplus1@
             strFTPid = "mbcplus_mbcpvod";
@@ -168,16 +172,11 @@ namespace MBCPLUS_DAEMON
             hls_url = (String)obj["api_response"]["full_url"];
         }
 
-        void Run(String customer_type)
+        private void Run(String customer_type)
         {
-            //YTInfo ytInfo = Singleton.getInstance().Get_YTInstance();           
+            //YTInfo ytInfo = Singleton.getInstance().Get_YTInstance();
 
-            ConnectionPool connPool;
-            SqlMapper mapper = new SqlMapper();            
-            //String type = null;
-            //MySqlCommand cmd;
-            connPool = new ConnectionPool();
-            connPool.SetConnection(new MySqlConnection(Singleton.getInstance().GetStrConn()));            
+            SqlMapper mapper = new SqlMapper();
 
             /* Properties.ini로 옮김 ( 주석처리 된 곳 삭제 예정)
             String strBaseUri = "http://metaapi.mbcmedia.net:5000/SMRMetaCollect.svc/"; // MetaHubApi Agent URL (삭제예정)
@@ -216,9 +215,9 @@ namespace MBCPLUS_DAEMON
                 sql_tail = "AND CU.customer_id != '9' AND CU.customer_id != '10'";
             }
             //Waiting for make winform
-            Thread.Sleep(5000);            
+            Thread.Sleep(5000);
             while (!_shouldStop)
-            {                
+            {
                 try
                 {
                     DataSet ds = new DataSet();
@@ -232,7 +231,7 @@ namespace MBCPLUS_DAEMON
                     {
                         mapper.GetFtpInfo(ds, sql_tail);
                     }
-                    
+
                     // Rows 가 1 이상일 때 탐색함
                     foreach (DataRow r in ds.Tables[0].Rows)
                     {
@@ -282,7 +281,7 @@ namespace MBCPLUS_DAEMON
                             ftpInfo.program_img_edit_count = Convert.ToInt32(r["program_img_edit_count"].ToString());
                             ftpInfo.program_posterimg_edit_count = Convert.ToInt32(r["program_posterimg_edit_count"].ToString());
                             ftpInfo.program_circleimg_edit_count = Convert.ToInt32(r["program_circleimg_edit_count"].ToString());
-                            ftpInfo.program_thumbimg_edit_count = Convert.ToInt32(r["program_thumbimg_edit_count"].ToString());                            
+                            ftpInfo.program_thumbimg_edit_count = Convert.ToInt32(r["program_thumbimg_edit_count"].ToString());
 
                             ftpInfo.smr_program_img_edit_count = Convert.ToInt32(r["smr_program_img_edit_count"].ToString());
                             ftpInfo.smr_program_posterimg1_edit_count = Convert.ToInt32(r["smr_program_posterimg1_edit_count"].ToString());
@@ -337,7 +336,7 @@ namespace MBCPLUS_DAEMON
                             dmInfo.geoblock_value = r["geoblock_value"].ToString();
 
                             //frmMain.WriteLogThread("[FTPService] CallbackURL : " + m_s_ip4addr);
-                            
+
                             // 해피라이징의 경우 clip_YN 이 N으로 되어있으며 MOV 의 경우 트랜스코딩 후 파일은 보내지 않고 XML로 경로만 보냄
                             if (String.Equals("N", ftpInfo.clip_YN) && String.Equals("MOV", ftpInfo.type))
                             {
@@ -355,9 +354,8 @@ namespace MBCPLUS_DAEMON
                                 String alias_targetpath = "";
                                 String alias_targetfilename = "";
                                 String redistribute_title = null;
-                                
 
-                                if (ftpInfo.clip_mov_edit_count > 1 )
+                                if (ftpInfo.clip_mov_edit_count > 1)
                                 {
                                     redistribute_title = "_재전송";
                                 }
@@ -464,7 +462,7 @@ namespace MBCPLUS_DAEMON
                             */
 
                             // 파일 타겟 네임 설정 부분
-                            FTPMgr ftpmgr = new FTPMgr(connPool);
+                            FTPMgr ftpmgr = new FTPMgr();
                             ftpmgr.SetAlias(ftpInfo.alias_YN);
                             ftpmgr.SetConfidential(ftpInfo.pk, ftpInfo.host, ftpInfo.path, ftpInfo.id, ftpInfo.pw, ftpInfo.port, ftpInfo.customer_id, ftpInfo.gid, ftpInfo.cid);
                             ftpmgr.SetSourcePath(ftpInfo.srcpath);
@@ -493,9 +491,9 @@ namespace MBCPLUS_DAEMON
                                 // 채널 리스트 갱신
                                 // 플레이 리스트 갱신
                                 // 저작권 차단 목록 갱신
-                                
+
                                 String session_id = mapper.GetYoutubeSessionID(ftpInfo.cid);
-                                if ( String.IsNullOrEmpty(session_id) )
+                                if (String.IsNullOrEmpty(session_id))
                                 {
                                     ytInfo.session_id = DateTime.Now.Ticks.ToString("x");
                                     mapper.UpdateYoutubeSessionID(ftpInfo.cid, ytInfo.session_id);
@@ -523,13 +521,14 @@ namespace MBCPLUS_DAEMON
                                         if (!String.IsNullOrEmpty(ytInfo.videoid))
                                         {
                                             frmMain.WriteLogThread("delete yt_videoid  : " + ytInfo.videoid);
-                                            mapper.GetYTAccountList(ds_account,ytInfo.channelid);
+                                            mapper.GetYTAccountList(ds_account, ytInfo.channelid);
                                             ytInfo.authentication(ds_account.Tables[0].Rows[0]["keyfile"].ToString(), ds_account.Tables[0].Rows[0]["name"].ToString());
                                             try
                                             {
                                                 ytInfo.DeleteVideo(ytInfo.videoid);
-                                            } catch { }
-                                            
+                                            }
+                                            catch { }
+
                                             //WMS videoid 삭제
                                             mapper.UpdateYoutubeVideoIDToNULL(ytInfo.videoid);
                                             frmMain.WriteLogThread("delete yt_videoid  : " + ytInfo.videoid + " is Completed");
@@ -540,25 +539,25 @@ namespace MBCPLUS_DAEMON
                                         ytInfo.IsImgCompleted = mapper.YTUploadCheck(ftpInfo.cid, "img", out thumb_FileName);
                                         ytInfo.IsSrtCompleted = mapper.YTUploadCheck(ftpInfo.cid, "srt", out SRT_FileName);
 
-                                        if ( !String.IsNullOrEmpty(thumb_FileName) )
+                                        if (!String.IsNullOrEmpty(thumb_FileName))
                                         {
                                             ytInfo.custom_thumbnail = thumb_FileName;
                                         }
-                                        if ( !String.IsNullOrEmpty(SRT_FileName))
+                                        if (!String.IsNullOrEmpty(SRT_FileName))
                                         {
                                             ytInfo.caption_file = SRT_FileName;
                                             ytInfo.caption_language = ytInfo.spoken_language;
                                         }
                                         String csvFileName = ytInfo.MakeYoutubeCSVFile();
-                                        
+
                                         String csv_destPath = String.Format("/{0}_{1}/{2}", Path.GetFileNameWithoutExtension(ytInfo.movpath), ytInfo.session_id, Path.GetFileName(csvFileName));
-                                        
+
                                         frmMain.WriteLogThread(String.Format("{0} is created", csvFileName));
                                         ftpmgr.yt_csvSendFile(csvFileName, csv_destPath);
                                         ftpmgr.yt_deliveryCompleteSendFile(csv_destPath);
                                         //2019-03-14 추가
                                         mapper.UpdateClipStatus(ftpInfo.cid, "Completed");
-                                        //Youtube service ready to parse                                        
+                                        //Youtube service ready to parse
                                         mapper.UpdateYoutubeReady(ftpInfo.cid);
                                     }
                                     mapper.UpdateFtpCompleted(ftpInfo.pk);
@@ -571,7 +570,7 @@ namespace MBCPLUS_DAEMON
                                 {
                                     // 전송 실패
                                     mapper.UpdateFtpStatus(ftpInfo.pk, "Failed");
-                                    mapper.UpdateClipStatus(ftpInfo.cid, "Failed");                                                                  
+                                    mapper.UpdateClipStatus(ftpInfo.cid, "Failed");
                                 }
                             }
                             // dailymotion upload
@@ -616,7 +615,6 @@ namespace MBCPLUS_DAEMON
                                 if (ftpmgr.Legacycheck(ftpInfo))
                                 {
                                     ftpmgr.DeleteFile();
-
                                 } else
                                 {
                                     //false
@@ -649,7 +647,7 @@ namespace MBCPLUS_DAEMON
                                         //클립 영상
                                         // 전송한 파일이 clip mov며 CDN일 때 customer_id : 2가 CDN
                                         // 1. 영상 원본 퍼지
-                                        // 2. full_url 업데이트                                        
+                                        // 2. full_url 업데이트
 
                                         apiPurgeDomain = "http://vod.mbcmpp.co.kr";
                                         cdnapi = cdninfo.apiDomain + "?user_id=" + cdninfo.apiUserid + "&passwd=" + cdninfo.apiPasswd + "&action=" + cdninfo.apiAction + "&purge_domain=" + apiPurgeDomain + "&purge_url=" + apiFtpPath;
@@ -674,7 +672,7 @@ namespace MBCPLUS_DAEMON
                                         log.logging("cdnresponse : " + cdnresponse);
                                         mapper.UpdateCDNURL(ftpInfo.type, full_url, ftpInfo.clip_pk);
                                     }
-                                    
+
                                     if (!String.IsNullOrEmpty(ftpInfo.cid) && ftpInfo.type.ToLower().Equals("yt_srt"))
                                     {
                                         //유튜브 자막파일 SRT
@@ -735,7 +733,7 @@ namespace MBCPLUS_DAEMON
                                         //클립 이미지
                                         // 1. 이미지 퍼지
                                         // 2. full_url 업데이트
-                                        //apiPurgeDomain = "http://mbcplus-dn.dl.cdn.cloudn.co.kr";                                
+                                        //apiPurgeDomain = "http://mbcplus-dn.dl.cdn.cloudn.co.kr";
                                         apiPurgeDomain = "http://Img.mbcmpp.co.kr";
                                         cdnapi = cdninfo.apiDomain + "?user_id=" + cdninfo.apiUserid + "&passwd=" + cdninfo.apiPasswd + "&action=" + cdninfo.apiAction + "&purge_domain=" + apiPurgeDomain + "&purge_url=" + apiFtpPath;
                                         log.logging("cdnapi : " + cdnapi);
@@ -749,7 +747,7 @@ namespace MBCPLUS_DAEMON
                                         //유튜브 이미지
                                         // 1. 이미지 퍼지
                                         // 2. full_url 업데이트
-                                        //apiPurgeDomain = "http://mbcplus-dn.dl.cdn.cloudn.co.kr";                                
+                                        //apiPurgeDomain = "http://mbcplus-dn.dl.cdn.cloudn.co.kr";
                                         apiPurgeDomain = "http://Img.mbcmpp.co.kr";
                                         cdnapi = cdninfo.apiDomain + "?user_id=" + cdninfo.apiUserid + "&passwd=" + cdninfo.apiPasswd + "&action=" + cdninfo.apiAction + "&purge_domain=" + apiPurgeDomain + "&purge_url=" + apiFtpPath;
                                         log.logging("cdnapi : " + cdnapi);
@@ -759,8 +757,8 @@ namespace MBCPLUS_DAEMON
                                     }
                                     // check cdn_url 이미지. 영상 체크
                                     if (mapper.CheckUrlisCompleted(ftpInfo.clip_pk))
-                                    {   
-                                        mapper.UpdateClipStatus(ftpInfo.cid, "Completed");                                        
+                                    {
+                                        mapper.UpdateClipStatus(ftpInfo.cid, "Completed");
                                     }
                                     if (String.Equals(ftpInfo.attribute, "PA") && ftpInfo.type.ToLower().Equals("img"))
                                     {
@@ -777,7 +775,7 @@ namespace MBCPLUS_DAEMON
                                         mapper.UpdateProgramImgCompleted(full_url, ftpInfo.pid, ftpInfo.program_img_type);
                                         // 프로그램 이미지 업데이트 완료(메타허브 업데이트와 관계없으므로 Completed 처리함
                                     }
-                                    if ( (String.Equals(ftpInfo.attribute, "A1") || String.Equals(ftpInfo.attribute,"A0")) && ftpInfo.type.ToLower().Equals("img"))
+                                    if ((String.Equals(ftpInfo.attribute, "A1") || String.Equals(ftpInfo.attribute, "A0")) && ftpInfo.type.ToLower().Equals("img"))
                                     {
                                         //프로그램 이미지일 경우
                                         //apiPurgeDomain = "http://mbcplus-dn.dl.cdn.cloudn.co.kr";
@@ -795,7 +793,7 @@ namespace MBCPLUS_DAEMON
                                     if (!String.IsNullOrEmpty(ftpInfo.gid) && String.IsNullOrEmpty(ftpInfo.cid) && ftpInfo.type.ToLower().Equals("img"))
                                     {
                                         //회차 이미지
-                                        //apiPurgeDomain = "http://mbcplus-dn.dl.cdn.cloudn.co.kr";                                
+                                        //apiPurgeDomain = "http://mbcplus-dn.dl.cdn.cloudn.co.kr";
                                         apiPurgeDomain = "http://Img.mbcmpp.co.kr";
                                         cdnapi = cdninfo.apiDomain + "?user_id=" + cdninfo.apiUserid + "&passwd=" + cdninfo.apiPasswd + "&action=" + cdninfo.apiAction + "&purge_domain=" + apiPurgeDomain + "&purge_url=" + apiFtpPath;
                                         log.logging("cdnapi : " + cdnapi);
@@ -833,7 +831,6 @@ namespace MBCPLUS_DAEMON
                                         mapper.UpdateProgramSeqCompleted(full_url, ftpInfo.gid, ftpInfo.type);
                                         mapper.UpdateProgramSeqStatus(ftpInfo.gid, "Completed");
                                     }
-
                                 }
 
                                 if (ftpInfo.transcoding_YN == "Y") // 현재 customer_id : 1 (BBMC만 transcode_YN = Y)
@@ -892,34 +889,36 @@ namespace MBCPLUS_DAEMON
                             else
                             {
                                 //Failed
-                                mapper.UpdateFtpStatus(ftpInfo.pk, "Failed", errmsg);                                
-                                if (!String.IsNullOrEmpty(ftpInfo.gid) && String.IsNullOrEmpty(ftpInfo.cid) )
+                                mapper.UpdateFtpStatus(ftpInfo.pk, "Failed", errmsg);
+                                if (!String.IsNullOrEmpty(ftpInfo.gid) && String.IsNullOrEmpty(ftpInfo.cid))
                                 { //회차일 경우 회차 실패
                                     mapper.UpdateProgramSeqStatus(ftpInfo.gid, "Failed", "FTP 전송 중 오류");
                                 }
                                 if (!String.IsNullOrEmpty(ftpInfo.cid) && !ftpInfo.type.ToLower().Equals("xml"))
                                 { //클립일 경우 클립 실패
                                     mapper.UpdateClipStatus(ftpInfo.cid, "Failed");
-                                } else
+                                }
+                                else
                                 {
                                     log.logging("FTP Sending Failed But status not change : " + ftpInfo.type);
                                 }
                             }
                         }
                         catch (Exception e)
-                        {                            
+                        {
                             frmMain.WriteLogThread("[FTPService] " + e.ToString());
                             log.logging(e.ToString());
                             //ftp 상태 실패
                             mapper.UpdateFtpStatus(ftpInfo.pk, "Failed", Util.escapedPath(e.ToString()));
-                            if ( !String.IsNullOrEmpty(ftpInfo.gid) && String.IsNullOrEmpty(ftpInfo.cid) )
+                            if (!String.IsNullOrEmpty(ftpInfo.gid) && String.IsNullOrEmpty(ftpInfo.cid))
                             { //회차일 경우 회차 실패
                                 mapper.UpdateProgramSeqStatus(ftpInfo.gid, "Failed", e.ToString());
                             }
-                            if ( !String.IsNullOrEmpty(ftpInfo.cid) && !ftpInfo.type.ToLower().Equals("xml"))
+                            if (!String.IsNullOrEmpty(ftpInfo.cid) && !ftpInfo.type.ToLower().Equals("xml"))
                             { //클립일 경우 클립 실패
                                 mapper.UpdateClipStatus(ftpInfo.cid, "Failed");
-                            } else
+                            }
+                            else
                             {
                                 log.logging("FTP Sending Failed But status not change  : " + ftpInfo.type + "\n" + e.ToString());
                             }
@@ -935,7 +934,7 @@ namespace MBCPLUS_DAEMON
                 }
                 Thread.Sleep(1000);
             }
-            connPool.ConnectionDisPose();
+
             log.logging("Thread Terminate");
         }
     }

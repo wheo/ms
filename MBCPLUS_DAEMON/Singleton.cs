@@ -7,22 +7,22 @@ using MySql.Data;
 using MySql.Data.MySqlClient;
 using System.Data;
 
-
 namespace MBCPLUS_DAEMON
 {
-    class Singleton
+    internal class Singleton
     {
         //private static Singleton singleton = new Singleton();
         private volatile static Singleton _uniqueInstance;
+
         private MySqlConnection m_conn = null;
         private String m_strconn;
         private String[] m_strCallbackURL;
-        private ConnectionPool connPool;
+
         private SqlMapper mapper;
         private CdnInfo cdninfo;
         //private delegate System.Windows.Forms.ListBox m_lstbox;
 
-        Boolean m_isThreadRunning = false;
+        private Boolean m_isThreadRunning = false;
 
         public Boolean Test { get; set; } = false;
 
@@ -37,29 +37,17 @@ namespace MBCPLUS_DAEMON
 
         public String BBMChost { get; set; }
 
-
         private Singleton()
         {
-
-        }        
+        }
 
         public YTInfo Get_YTInstance()
         {
-            if ( yt == null)
+            if (yt == null)
             {
                 yt = new YTInfo();
             }
             return yt;
-        }
-
-        public ConnectionPool GetConnectionPool()
-        {
-            if (connPool == null)
-            {
-                connPool = new ConnectionPool();
-            }
-            connPool.SetConnection(GetConnection());
-            return connPool;
         }
 
         public SqlMapper GetSqlMapper()
@@ -118,7 +106,7 @@ namespace MBCPLUS_DAEMON
         {
             m_strconn = strconn;
         }
-        
+
         public CdnInfo GetCdnInfo()
         {
             return this.cdninfo;
@@ -144,10 +132,11 @@ namespace MBCPLUS_DAEMON
 
         public void setTestMode(String test)
         {
-            if ( test == "true")
+            if (test == "true")
             {
-                Test = true;                
-            } else
+                Test = true;
+            }
+            else
             {
                 Test = false;
             }

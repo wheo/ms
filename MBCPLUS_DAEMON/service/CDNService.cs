@@ -14,11 +14,10 @@ using Newtonsoft.Json.Linq;
 
 namespace MBCPLUS_DAEMON
 {
-    class CDNService
-    {        
+    internal class CDNService
+    {
         private Boolean _shouldStop = false;
         private String m_sql = "";
-        private ConnectionPool connPool;
         private Log log;
         private SqlMapper mapper;
 
@@ -29,7 +28,7 @@ namespace MBCPLUS_DAEMON
             DoWork();
         }
 
-        void DoWork()
+        private void DoWork()
         {
             Thread t1 = new Thread(new ThreadStart(Run));
             t1.Start();
@@ -37,11 +36,11 @@ namespace MBCPLUS_DAEMON
 
         public void RequestStop()
         {
-            _shouldStop = true;            
+            _shouldStop = true;
         }
 
-        public void GetFullurl(CdnInfo cdninfo, String pathfilename,  out String full_url, out String rtmp_url, out String hls_url)
-        {            
+        public void GetFullurl(CdnInfo cdninfo, String pathfilename, out String full_url, out String rtmp_url, out String hls_url)
+        {
             String strFTPid = "";
             String ext = Path.GetExtension(pathfilename);
             full_url = "";
@@ -76,7 +75,7 @@ namespace MBCPLUS_DAEMON
             string responseString = Encoding.UTF8.GetString(response);
             log.logging("response : " + responseString);
 
-            String accessCheck = "";            
+            String accessCheck = "";
             JObject obj;
             try
             {
@@ -145,33 +144,31 @@ namespace MBCPLUS_DAEMON
             hls_url = (String)obj["api_response"]["full_url"];
         }
 
-        void Run()
+        private void Run()
         {
-            CdnInfo cdninfo = Singleton.getInstance().GetCdnInfo();            
-            //String apiPasswd = "mlb@2017";            
+            CdnInfo cdninfo = Singleton.getInstance().GetCdnInfo();
+            //String apiPasswd = "mlb@2017";
             String apiFtpPath = "";
 
             String status = null;
             MySqlCommand cmd;
 
-            connPool = new ConnectionPool();
-            connPool.SetConnection(new MySqlConnection(Singleton.getInstance().GetStrConn()));
-            DataSet ds = new DataSet();            
+            DataSet ds = new DataSet();
             //Waiting for make winform
             Thread.Sleep(5000);
             //frmMain.WriteLogThread("CDN Service Start...");
             log.logging("Service Start...");
 
             while (!_shouldStop)
-            {    
+            {
                 try
-                {   
-                    mapper.GetCallbakInfo(ds);                    
+                {
+                    mapper.GetCallbakInfo(ds);
 
                     foreach (DataRow r in ds.Tables[0].Rows)
                     {
                         vo.CallbackInfo callbackInfo = new vo.CallbackInfo();
-                        
+
                         callbackInfo.pk = r["callback_pk"].ToString();
                         callbackInfo.tc_pk = r["tc_pk"].ToString();
                         callbackInfo.program_seq_pk = r["program_seq_pk"].ToString();
@@ -200,16 +197,13 @@ namespace MBCPLUS_DAEMON
                         callbackInfo.encid = r["encid"].ToString();
                         callbackInfo.encset = r["encset"].ToString();
 
-                        if ( callbackInfo.pathfilename.Length > 1)
+                        if (callbackInfo.pathfilename.Length > 1)
                         {
                             callbackInfo.pathfilename = callbackInfo.pathfilename.Substring(1);
                         }
-                        connPool.ConnectionOpen();
-                        m_sql = String.Format("UPDATE TB_CALLBACK SET starttime = CURRENT_TIMESTAMP(), status = 'Running' WHERE callback_pk = '{0}'", callbackInfo.pk);
+
                         //Running 으로 변경
-                        cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                        cmd.ExecuteNonQuery();
-                        connPool.ConnectionClose();
+                        mapper.UpdateCallbackStatus(callbackInfo.pk, "Running");
 
                         //콜백을 받으면 퍼지
                         // ftppath extention 에 따라 도메인 분기
@@ -239,35 +233,35 @@ namespace MBCPLUS_DAEMON
                             cdnapi = cdninfo.apiDomain + "?user_id=" + cdninfo.apiUserid + "&passwd=" + cdninfo.apiPasswd + "&action=" + cdninfo.apiAction + "&purge_domain=" + apiPurgeDomain + "&purge_url=" + apiFtpPath;
                             log.logging("cdnapi : " + cdnapi);
                             cdnresponse = Http.Get(cdnapi);
-                            log.logging(cdnresponse);                            
+                            log.logging(cdnresponse);
                         }
                         else if (Path.GetExtension(apiFtpPath).ToLower() == ".jpg" || Path.GetExtension(apiFtpPath).ToLower() == ".png")
                         {
-                            //apiPurgeDomain = "http://mbcplus-dn.dl.cdn.cloudn.co.kr";                                
+                            //apiPurgeDomain = "http://mbcplus-dn.dl.cdn.cloudn.co.kr";
                             apiPurgeDomain = "http://Img.mbcmpp.co.kr";
                             cdnapi = cdninfo.apiDomain + "?user_id=" + cdninfo.apiUserid + "&passwd=" + cdninfo.apiPasswd + "&action=" + cdninfo.apiAction + "&purge_domain=" + apiPurgeDomain + "&purge_url=" + apiFtpPath;
                             log.logging("cdnapi : " + cdnapi);
                             cdnresponse = Http.Get(cdnapi);
-                            log.logging("cdnresponse : " + cdnresponse);                            
+                            log.logging("cdnresponse : " + cdnresponse);
                         }
                         //strCDNMethod = "/cdnservice/downloadpath";
 
                         mapper.UpdateCallbackURL(callbackInfo.pk, full_url, rtmp_url, hls_url);
-                        
+
                         log.logging(full_url + " encID : " + callbackInfo.encid);
 
                         //if (m_encid == "notranscoding" || m_encid == "720p1M" || m_encid == "720p2M" || m_encset == "[copy]")
-                        if ( callbackInfo.encid == "720p1M" || callbackInfo.encid == "720p2M")
-                        {                            
+                        if (callbackInfo.encid == "720p1M" || callbackInfo.encid == "720p2M")
+                        {
                             if (String.Equals(Path.GetExtension(full_url).ToLower(), ".mp4"))
                             {
                                 String profileid = "";
-                                
-                                if ( callbackInfo.encid == "720p1M" )
+
+                                if (callbackInfo.encid == "720p1M")
                                 {
                                     profileid = "1";
                                 }
-                                else if ( callbackInfo.encid == "720p2M")
+                                else if (callbackInfo.encid == "720p2M")
                                 {
                                     profileid = "3";
                                 }
@@ -285,7 +279,7 @@ namespace MBCPLUS_DAEMON
                                 String[] hlsField = new String[15];
                                 hlsField[1] = "hls_url_T1";
                                 hlsField[3] = "hls_url_T2";
-                                //hlsField[13] = "hls_url";                                    
+                                //hlsField[13] = "hls_url";
 
                                 m_sql = String.Format(@"UPDATE TB_CLIP
                                                         SET {0} = '{1}'
@@ -298,24 +292,28 @@ namespace MBCPLUS_DAEMON
                                     , rtmp_url
                                     , hlsField[Int32.Parse(profileid)]
                                     , hls_url
-                                    , callbackInfo.cid );
+                                    , callbackInfo.cid);
 
-                                connPool.ConnectionOpen();
-                                cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                                cmd.ExecuteNonQuery();                                    
-                                connPool.ConnectionClose();
-                                
+                                using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
+                                {
+                                    conn.Open();
+                                    cmd = new MySqlCommand(m_sql, conn);
+                                    cmd.ExecuteNonQuery();
+                                }
+
                                 //if (m_profileid == "1" || m_profileid == "3")
                                 if (callbackInfo.encid == "720p1M" || callbackInfo.encid == "720p2M")
                                 {
                                     // 1M or 2M callback이 올 경우에 처리
-                                    m_sql = String.Format(@"UPDATE TB_CLIP                                                                
+                                    m_sql = String.Format(@"UPDATE TB_CLIP
                                                             SET callback_cnt = callback_cnt + 1
                                                             WHERE cid = '{0}'", callbackInfo.cid);
-                                    connPool.ConnectionOpen();
-                                    cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                                    cmd.ExecuteNonQuery();
-                                    connPool.ConnectionClose();
+                                    using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
+                                    {
+                                        conn.Open();
+                                        cmd = new MySqlCommand(m_sql, conn);
+                                        cmd.ExecuteNonQuery();
+                                    }
                                     //cid,gid,typeid를 TB_CLIP_INFO에 삽입
 
                                     String typeid = "";
@@ -323,7 +321,7 @@ namespace MBCPLUS_DAEMON
                                     {
                                         typeid = "3";
                                     }
-                                    else if ( callbackInfo.encid == "720p2M")
+                                    else if (callbackInfo.encid == "720p2M")
                                     {
                                         typeid = "2";
                                     }
@@ -332,17 +330,20 @@ namespace MBCPLUS_DAEMON
                                 }
 
                                 // callback_cnt 가 2이상이면 xml ready
-                                connPool.ConnectionOpen();
-                                m_sql = String.Format(@"SELECT                                                                                    
-                                                        TB_CLIP.callback_cnt
-                                                        FROM TB_CLIP                            
-                                                        WHERE 1=1
-                                                        AND cid = '{0}'                           
-                                                        LIMIT 0,1", callbackInfo.cid);
-                                MySqlDataAdapter adpt_cnt = new MySqlDataAdapter(m_sql, connPool.getConnection());
                                 DataSet ds_cnt = new DataSet();
-                                adpt_cnt.Fill(ds_cnt, "CALLBACK_CNT");
-                                connPool.ConnectionClose();
+                                m_sql = String.Format(@"SELECT
+                                                        TB_CLIP.callback_cnt
+                                                        FROM TB_CLIP
+                                                        WHERE 1=1
+                                                        AND cid = '{0}'
+                                                        LIMIT 0,1", callbackInfo.cid);
+                                using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
+                                {
+                                    conn.Open();
+                                    MySqlDataAdapter adpt_cnt = new MySqlDataAdapter(m_sql, conn);
+
+                                    adpt_cnt.Fill(ds_cnt, "CALLBACK_CNT");
+                                }
 
                                 foreach (DataRow r_cnt in ds_cnt.Tables[0].Rows)
                                 {
@@ -351,25 +352,28 @@ namespace MBCPLUS_DAEMON
                                     n_callback = Int32.Parse(callback_cnt);
                                     frmMain.WriteLogThread(String.Format(@"[CDNService] Callback cnt : {0}, cid : {1}", callback_cnt, callbackInfo.cid));
                                     log.logging(String.Format(@"Callback cnt : {0}, cid : {1}", callback_cnt, callbackInfo.cid));
-                                        
-                                    if (n_callback % 2 == 0 || ( callbackInfo.transcode_YN == "N" && n_callback >= 1) )
+
+                                    if (n_callback % 2 == 0 || (callbackInfo.transcode_YN == "N" && n_callback >= 1))
                                     {
                                         //callback을 받았으므로 Completed로 변경함
                                         //mapper.UpdateClipCompleted(m_clip_pk);
                                         mapper.UpdateClipStatus(callbackInfo.cid, "Completed");
                                         try
                                         {
+                                            DataSet ds_ftp = new DataSet();
                                             m_sql = String.Format(@"SELECT
                                                             TB_CLIP.ftp_target
                                                             FROM TB_CLIP
                                                             WHERE 1=1
-                                                            AND cid = '{0}'                            
+                                                            AND cid = '{0}'
                                                             LIMIT 0,1", callbackInfo.cid);
-                                            connPool.ConnectionOpen();
-                                            MySqlDataAdapter adpt_ftp = new MySqlDataAdapter(m_sql, connPool.getConnection());
-                                            DataSet ds_ftp = new DataSet();
-                                            adpt_ftp.Fill(ds_ftp, "FTP_TARGET");
-                                            connPool.ConnectionClose();
+                                            using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
+                                            {
+                                                conn.Open();
+                                                MySqlDataAdapter adpt_ftp = new MySqlDataAdapter(m_sql, conn);
+
+                                                adpt_ftp.Fill(ds_ftp, "FTP_TARGET");
+                                            }
 
                                             //ds.Tables[0].Rows[0]["c"].ToString();
 
@@ -381,7 +385,7 @@ namespace MBCPLUS_DAEMON
                                                 map = r_ftp.Table.Columns
                                                     .Cast<DataColumn>()
                                                     .ToDictionary(col => col.ColumnName, col => r_ftp.Field<Object>(col.ColumnName));
-                                                    
+
                                                 ftp_target = map["ftp_target"].ToString().Split(',');
 
                                                 // 준비된 XML을 각 고객사에 전송
@@ -393,15 +397,18 @@ namespace MBCPLUS_DAEMON
                                                         if (customer != "1" && customer != "2")
                                                         {
                                                             //frmMain.WriteLogThread("[ClipService] customer : " + customer);
-                                                            connPool.ConnectionOpen();
+
                                                             m_sql = String.Format(@"UPDATE
                                                                         TB_FTP_QUEUE SET status = 'Pending'
                                                                         WHERE clip_pk = '{0}'
                                                                         AND customer_id = '{1}'
                                                                         AND type = 'XML'", callbackInfo.clip_pk, customer);
-                                                            cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                                                            cmd.ExecuteNonQuery();
-                                                            connPool.ConnectionClose();
+                                                            using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
+                                                            {
+                                                                conn.Open();
+                                                                cmd = new MySqlCommand(m_sql, conn);
+                                                                cmd.ExecuteNonQuery();
+                                                            }
                                                         }
                                                     }
                                                 }
@@ -411,24 +418,24 @@ namespace MBCPLUS_DAEMON
                                         catch (Exception e)
                                         {
                                             frmMain.WriteLogThread(e.ToString());
-                                            log.logging(e.ToString());                                                
-                                        }                                            
+                                            log.logging(e.ToString());
+                                        }
                                     }
                                 }
                                 ds_cnt.Clear();
                             }
-                        }                        
+                        }
                     }
                 }
                 catch (Exception e)
                 {
-                    frmMain.WriteLogThread(e.ToString());                    
-                    log.logging(e.ToString());                    
+                    frmMain.WriteLogThread(e.ToString());
+                    log.logging(e.ToString());
                 }
                 ds.Clear();
                 Thread.Sleep(1000);
             }
-            connPool.ConnectionDisPose();
+
             log.logging("Thread Terminate");
         }
     }

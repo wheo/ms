@@ -14,15 +14,15 @@ using Newtonsoft.Json.Linq;
 
 namespace MBCPLUS_DAEMON
 {
-    class ProgramSeqService
+    internal class ProgramSeqService
     {
-        private Boolean _shouldStop = false;        
+        private Boolean _shouldStop = false;
+
         //private String m_imgsrcpath;
         //private String m_clipsrcpath;
-        //private String m_dstpath;        
-        private String m_pk;        
-        private String m_sql = "";
-        private ConnectionPool connPool;
+        //private String m_dstpath;
+        private String m_pk;
+
         private SqlMapper mapper;
 
         private Log log;
@@ -35,7 +35,7 @@ namespace MBCPLUS_DAEMON
             DoWork();
         }
 
-        void DoWork()
+        private void DoWork()
         {
             Thread t1 = new Thread(new ThreadStart(Run));
             t1.Start();
@@ -43,20 +43,16 @@ namespace MBCPLUS_DAEMON
 
         public void RequestStop()
         {
-            _shouldStop = true;            
+            _shouldStop = true;
         }
 
-        void Run()
-        {   
-            DataSet ds = new DataSet();            
+        private void Run()
+        {
+            DataSet ds = new DataSet();
             String status = null;
-            MySqlCommand cmd;
-
-            connPool = new ConnectionPool();
-            connPool.SetConnection(new MySqlConnection(Singleton.getInstance().GetStrConn()));
 
             String strBaseUri = "http://metaapi.mbcmedia.net:5000/SMRMetaCollect.svc/";
-            
+
             //Waiting for make winform
             Thread.Sleep(5000);
             //frmMain.WriteLogThread("Program Service Start...");
@@ -85,13 +81,13 @@ namespace MBCPLUS_DAEMON
                         String cornernumber = r["cornernumber"].ToString();
                         String preview = r["preview"].ToString();
                         String broaddate = r["broaddate"].ToString();
-                        String title = r["title"].ToString();                        
+                        String title = r["title"].ToString();
                         String searchkeyword = r["searchkeyword"].ToString();
                         String actor = r["actor"].ToString();
                         String targetage = r["targetage"].ToString();
                         String targetnation = r["targetnation"].ToString();
                         String targetplatform = r["targetplatform"].ToString();
-                        String limitnation  = r["limitnation"].ToString();
+                        String limitnation = r["limitnation"].ToString();
                         String platformisuse = r["platformisuse"].ToString();
                         String genre = r["genre"].ToString();
                         String isuse = r["isuse"].ToString();
@@ -113,18 +109,20 @@ namespace MBCPLUS_DAEMON
                         status = r["status"].ToString();
                         if (status.Equals("Ready"))
                         {
-                            connPool.ConnectionOpen();
-                            m_sql = String.Format("UPDATE TB_PROGRAM_SEQ SET starttime = CURRENT_TIMESTAMP(), status = 'Running' WHERE program_seq_pk = '{0}'", m_pk);
-                            //Running 으로 변경
-                            cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                            cmd.ExecuteNonQuery();
-                            connPool.ConnectionClose();
+                            using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
+                            {
+                                conn.Open();
+                                string sql = String.Format("UPDATE TB_PROGRAM_SEQ SET starttime = CURRENT_TIMESTAMP(), status = 'Running' WHERE program_seq_pk = '{0}'", m_pk);
+                                //Running 으로 변경
+                                MySqlCommand cmd = new MySqlCommand(sql, conn);
+                                cmd.ExecuteNonQuery();
+                            }
 
                             frmMain.WriteLogThread(String.Format(@"program_seq_pk({0}) is Running", m_pk));
 
                             JObject metaJson = new JObject(
                                 new JProperty("contentid", contentid),
-                                new JProperty("onair_date", onair_date),                                
+                                new JProperty("onair_date", onair_date),
                                 new JProperty("userid", userid),
                                 new JProperty("originid", originid),
                                 new JProperty("phun_onair_ymd", phun_onair_ymd),
@@ -164,7 +162,7 @@ namespace MBCPLUS_DAEMON
                             {
                                 //contentid 가 없으면 신규
                                 uri = strBaseUri + "CreateContentMeta";
-                                strJson = metaJson.ToString();                                
+                                strJson = metaJson.ToString();
                             }
                             log.logging(uri);
                             log.logging(strJson);
@@ -174,7 +172,7 @@ namespace MBCPLUS_DAEMON
 
                             // 성공시 Completed
                             //JObject obj = JObject.Parse(responseString);
-                            JArray arr = JArray.Parse(responseString);                            
+                            JArray arr = JArray.Parse(responseString);
                             String primarykey = "";
                             String successed = "";
                             Boolean metaSuccess = true;
@@ -201,30 +199,37 @@ namespace MBCPLUS_DAEMON
                             log.logging("primarykey is " + primarykey);
                             if (metaSuccess)
                             {
-                                connPool.ConnectionOpen();
+                                string sql = "";
+
                                 if (primarykey == "1")
                                 {
-                                    m_sql = String.Format("UPDATE TB_PROGRAM_SEQ SET endtime = CURRENT_TIMESTAMP(), status = 'Completed' WHERE program_seq_pk = '{0}'", m_pk);
+                                    sql = String.Format("UPDATE TB_PROGRAM_SEQ SET endtime = CURRENT_TIMESTAMP(), status = 'Completed' WHERE program_seq_pk = '{0}'", m_pk);
                                 }
                                 else if (!String.IsNullOrEmpty(primarykey))
                                 {
-                                    m_sql = String.Format("UPDATE TB_PROGRAM_SEQ SET endtime = CURRENT_TIMESTAMP(), status = 'Completed', contentid = '{0}' WHERE program_seq_pk = '{1}'", primarykey, m_pk);
+                                    sql = String.Format("UPDATE TB_PROGRAM_SEQ SET endtime = CURRENT_TIMESTAMP(), status = 'Completed', contentid = '{0}' WHERE program_seq_pk = '{1}'", primarykey, m_pk);
                                 }
-                                
-                                //Completed 으로 변경
-                                cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                                cmd.ExecuteNonQuery();
-                                connPool.ConnectionClose();
+
+                                using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
+                                {
+                                    conn.Open();
+
+                                    //Completed 으로 변경
+                                    MySqlCommand cmd = new MySqlCommand(sql, conn);
+                                    cmd.ExecuteNonQuery();
+                                }
                                 frmMain.WriteLogThread(String.Format(@"program_seq_pk({0}) is Completed", m_pk));
                             }
                             else
                             {
-                                connPool.ConnectionOpen();
-                                m_sql = String.Format("UPDATE TB_PROGRAM_SEQ SET endtime = CURRENT_TIMESTAMP(), status = 'Failed' WHERE program_seq_pk = '{0}'", m_pk);
-                                //Failed로 변경
-                                cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                                cmd.ExecuteNonQuery();
-                                connPool.ConnectionClose();
+                                using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
+                                {
+                                    conn.Open();
+                                    string sql = String.Format("UPDATE TB_PROGRAM_SEQ SET endtime = CURRENT_TIMESTAMP(), status = 'Failed' WHERE program_seq_pk = '{0}'", m_pk);
+                                    //Failed로 변경
+                                    MySqlCommand cmd = new MySqlCommand(sql, conn);
+                                    cmd.ExecuteNonQuery();
+                                }
                                 frmMain.WriteLogThread(String.Format(@"program_seq_pk({0}) is Failed", m_pk));
                             }
                         }
@@ -238,7 +243,7 @@ namespace MBCPLUS_DAEMON
                 Thread.Sleep(1000);
                 ds.Clear();
             }
-            connPool.ConnectionDisPose();
+
             log.logging("Thread Terminate");
         }
     }

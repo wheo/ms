@@ -12,11 +12,10 @@ using MySql.Data.MySqlClient;
 
 namespace MBCPLUS_DAEMON
 {
-    class CopyClipService
-    {        
-        private Boolean _shouldStop = false;                
-        private String m_sql = "";       
-        private ConnectionPool connPool;
+    internal class CopyClipService
+    {
+        private Boolean _shouldStop = false;
+
         private Log log;
         private SqlMapper mapper;
 
@@ -28,7 +27,7 @@ namespace MBCPLUS_DAEMON
             DoWork();
         }
 
-        void DoWork()
+        private void DoWork()
         {
             Thread t1 = new Thread(new ThreadStart(Run));
             t1.Start();
@@ -39,12 +38,11 @@ namespace MBCPLUS_DAEMON
             _shouldStop = true;
         }
 
-        void Run()
+        private void Run()
         {
-            DataSet ds = new DataSet();            
+            DataSet ds = new DataSet();
             String status = null;
             String type = null;
-            MySqlCommand cmd;
 
             String srcpath;
             String dstpath;
@@ -59,9 +57,6 @@ namespace MBCPLUS_DAEMON
             String dm_videoid;
             String edit_count_tail = "";
 
-            connPool = new ConnectionPool();
-            connPool.SetConnection(new MySqlConnection(Singleton.getInstance().GetStrConn()));
-            
             //Waiting for make winform
             Thread.Sleep(10000);
             //frmMain.WriteLogThread("Copy Clip Service Start...");
@@ -92,12 +87,14 @@ namespace MBCPLUS_DAEMON
                             dm_videoid = r["dm_videoid"].ToString();
                             edit_count_tail = r["edit_count_tail"].ToString();
 
-                            connPool.ConnectionOpen();
-                            m_sql = String.Format("UPDATE TB_ARCHIVE SET starttime = CURRENT_TIMESTAMP(), status = 'Running' WHERE archive_pk = '{0}'", pk);
-                            //Running 으로 변경
-                            cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                            cmd.ExecuteNonQuery();
-                            connPool.ConnectionClose();
+                            using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
+                            {
+                                conn.Open();
+                                string sql = String.Format("UPDATE TB_ARCHIVE SET starttime = CURRENT_TIMESTAMP(), status = 'Running' WHERE archive_pk = '{0}'", pk);
+                                //Running 으로 변경
+                                MySqlCommand cmd = new MySqlCommand(sql, conn);
+                                cmd.ExecuteNonQuery();
+                            }
 
                             frmMain.WriteLogThread(String.Format(@"[CopyClipService] cid({0}) is Running", cid));
 
@@ -116,30 +113,36 @@ namespace MBCPLUS_DAEMON
                                 copier.Copy();
 
                                 //Completed 로 변경
-                                connPool.ConnectionOpen();
-                                m_sql = String.Format(@"UPDATE TB_ARCHIVE SET endtime = CURRENT_TIMESTAMP(), status = 'Completed' WHERE archive_pk = '{0}'", pk);
-                                cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                                cmd.ExecuteNonQuery();
-                                connPool.ConnectionClose();
+                                using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
+                                {
+                                    conn.Open();
+                                    string sql = String.Format(@"UPDATE TB_ARCHIVE SET endtime = CURRENT_TIMESTAMP(), status = 'Completed' WHERE archive_pk = '{0}'", pk);
+                                    MySqlCommand cmd = new MySqlCommand(sql, conn);
+                                    cmd.ExecuteNonQuery();
+                                }
 
                                 String convert_targetpath = dstpath.Substring(2, dstpath.Length - 2).Replace('\\', '/');
                                 frmMain.WriteLogThread(convert_targetpath);
 
                                 if (type.ToLower() == "mov")
                                 {
-                                    connPool.ConnectionOpen();
-                                    m_sql = String.Format(@"UPDATE TB_CLIP SET archive_clip = '{0}' WHERE clip_pk = '{1}'", convert_targetpath, clip_pk);
-                                    cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                                    cmd.ExecuteNonQuery();
-                                    connPool.ConnectionClose();
-                                }                                
+                                    using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
+                                    {
+                                        conn.Open();
+                                        string sql = String.Format(@"UPDATE TB_CLIP SET archive_clip = '{0}' WHERE clip_pk = '{1}'", convert_targetpath, clip_pk);
+                                        MySqlCommand cmd = new MySqlCommand(sql, conn);
+                                        cmd.ExecuteNonQuery();
+                                    }
+                                }
                                 else if (type.ToLower() == "img")
                                 {
-                                    connPool.ConnectionOpen();
-                                    m_sql = String.Format(@"UPDATE TB_CLIP SET archive_img = '{0}' WHERE clip_pk = '{1}'", convert_targetpath, clip_pk);
-                                    cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                                    cmd.ExecuteNonQuery();
-                                    connPool.ConnectionClose();
+                                    using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
+                                    {
+                                        conn.Open();
+                                        string sql = String.Format(@"UPDATE TB_CLIP SET archive_img = '{0}' WHERE clip_pk = '{1}'", convert_targetpath, clip_pk);
+                                        MySqlCommand cmd = new MySqlCommand(sql, conn);
+                                        cmd.ExecuteNonQuery();
+                                    }
 
                                     if (!String.IsNullOrEmpty(dm_videoid))
                                     {
@@ -149,28 +152,38 @@ namespace MBCPLUS_DAEMON
                                     {
                                         mapper.UpdateYoutubeReady(cid);
                                     }
-                                } else if (type.ToLower() == "srt")
+                                }
+                                else if (type.ToLower() == "srt")
                                 {
-                                    connPool.ConnectionOpen();
-                                    m_sql = String.Format(@"UPDATE TB_CLIP SET archive_subtitle = '{0}' WHERE clip_pk = '{1}'", convert_targetpath, clip_pk);
-                                    cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                                    cmd.ExecuteNonQuery();
-                                    connPool.ConnectionClose();
-                                } else if ( type.ToLower() == "yt_img")
+                                    using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
+                                    {
+                                        conn.Open();
+                                        string sql = String.Format(@"UPDATE TB_CLIP SET archive_subtitle = '{0}' WHERE clip_pk = '{1}'", convert_targetpath, clip_pk);
+                                        MySqlCommand cmd = new MySqlCommand(sql, conn);
+                                        cmd.ExecuteNonQuery();
+                                    }
+                                }
+                                else if (type.ToLower() == "yt_img")
                                 {
-                                    connPool.ConnectionOpen();
-                                    m_sql = String.Format(@"UPDATE TB_YOUTUBE SET archive_img = '{0}' WHERE cid = '{1}'", convert_targetpath, cid);
-                                    cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                                    cmd.ExecuteNonQuery();
-                                    connPool.ConnectionClose();
-                                } else if ( type.ToLower() == "yt_srt")
+                                    using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
+                                    {
+                                        conn.Open();
+                                        string sql = String.Format(@"UPDATE TB_YOUTUBE SET archive_img = '{0}' WHERE cid = '{1}'", convert_targetpath, cid);
+                                        MySqlCommand cmd = new MySqlCommand(sql, conn);
+                                        cmd.ExecuteNonQuery();
+                                    }
+                                }
+                                else if (type.ToLower() == "yt_srt")
                                 {
-                                    connPool.ConnectionOpen();
-                                    m_sql = String.Format(@"UPDATE TB_YOUTUBE SET archive_srt = '{0}' WHERE cid = '{1}'", convert_targetpath, cid);
-                                    cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                                    cmd.ExecuteNonQuery();
-                                    connPool.ConnectionClose();
-                                } else if (type.ToLower() == "yt_srt_ko")
+                                    using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
+                                    {
+                                        conn.Open();
+                                        string sql = String.Format(@"UPDATE TB_YOUTUBE SET archive_srt = '{0}' WHERE cid = '{1}'", convert_targetpath, cid);
+                                        MySqlCommand cmd = new MySqlCommand(sql, conn);
+                                        cmd.ExecuteNonQuery();
+                                    }
+                                }
+                                else if (type.ToLower() == "yt_srt_ko")
                                 {
                                     mapper.UpdateClipArchivePath(convert_targetpath, cid, "ko");
                                     /*
@@ -180,7 +193,8 @@ namespace MBCPLUS_DAEMON
                                     cmd.ExecuteNonQuery();
                                     connPool.ConnectionClose();
                                     */
-                                } else if (type.ToLower() == "yt_srt_ja")
+                                }
+                                else if (type.ToLower() == "yt_srt_ja")
                                 {
                                     mapper.UpdateClipArchivePath(convert_targetpath, cid, "ja");
                                     /*
@@ -190,7 +204,8 @@ namespace MBCPLUS_DAEMON
                                     cmd.ExecuteNonQuery();
                                     connPool.ConnectionClose();
                                     */
-                                } else if (type.ToLower() == "yt_srt_en")
+                                }
+                                else if (type.ToLower() == "yt_srt_en")
                                 {
                                     mapper.UpdateClipArchivePath(convert_targetpath, cid, "en");
                                     /*
@@ -200,7 +215,8 @@ namespace MBCPLUS_DAEMON
                                     cmd.ExecuteNonQuery();
                                     connPool.ConnectionClose();
                                     */
-                                } else if (type.ToLower() == "yt_srt_zh")
+                                }
+                                else if (type.ToLower() == "yt_srt_zh")
                                 {
                                     mapper.UpdateClipArchivePath(convert_targetpath, cid, "zh");
                                     /*
@@ -214,7 +230,7 @@ namespace MBCPLUS_DAEMON
 
                                 String ftptargetpath = "";
                                 ftptargetpath = System.IO.Path.GetDirectoryName(dstpath);
-                                ftptargetpath = ftptargetpath.Replace(@"Z:\", "");                                    
+                                ftptargetpath = ftptargetpath.Replace(@"Z:\", "");
                                 ftptargetpath = ftptargetpath.Replace(@"\", "/");
                                 frmMain.WriteLogThread(String.Format(@"[CopyClipService] {0} ftptargetpath {1}", cid, ftptargetpath));
                                 frmMain.WriteLogThread(String.Format(@"[CopyClipService] {0} ftp_target : {1}", cid, m_ftp_target));
@@ -222,21 +238,21 @@ namespace MBCPLUS_DAEMON
                                 log.logging(String.Format("{0} ftp_target : {1}", cid, m_ftp_target));
                                 if (!String.IsNullOrEmpty(m_ftp_target))
                                 {
-                                    // Clip상태를 Sending 로 변경                                    
+                                    // Clip상태를 Sending 로 변경
                                     mapper.UpdateClipStatus(cid, "Sending");
-                                    
+
                                     String[] ftp_target = m_ftp_target.Split(',');
                                     foreach (String customer in ftp_target)
                                     {
                                         log.logging(String.Format("{0} customer_id : {1} ({2})", cid, customer, type));
                                         //고객사가 CDN이 아니면 type을 TRANSFER로 변환
                                         String tailName = "";
-                                        if ( type.ToLower() == "yt_img" || type.ToLower() == "yt_srt")
+                                        if (type.ToLower() == "yt_img" || type.ToLower() == "yt_srt")
                                         {
                                             tailName = "_YT1";
                                         }
 
-                                        if ( type.ToLower() == "yt_srt_ko")
+                                        if (type.ToLower() == "yt_srt_ko")
                                         {
                                             tailName = "_YT_SRT_KO";
                                         }
@@ -258,14 +274,15 @@ namespace MBCPLUS_DAEMON
 
                                         String ftpDestFileName = "";
 
-                                        if(String.IsNullOrEmpty(edit_count_tail))
+                                        if (String.IsNullOrEmpty(edit_count_tail))
                                         {
                                             ftpDestFileName = String.Format("{0}{1}{2}", cid.ToUpper(), tailName, Path.GetExtension(dstpath).ToLower());
-                                        } else
+                                        }
+                                        else
                                         {
                                             ftpDestFileName = String.Format("{0}{1}{2}{3}", cid.ToUpper(), tailName, edit_count_tail, Path.GetExtension(dstpath).ToLower());
                                         }
-                                        
+
                                         String type_temp = null;
                                         if (customer != "1" || customer != "2")
                                         {
@@ -273,29 +290,33 @@ namespace MBCPLUS_DAEMON
                                             if (type.ToLower() == "mov")
                                             {
                                                 // mov면 xml을 대기시킴(생성전임)
-                                                connPool.ConnectionOpen();
-                                                type_temp = type;
-                                                type = "XML";
-                                                m_sql = String.Format(@"INSERT INTO TB_FTP_QUEUE (starttime, archive_pk, clip_pk, srcpath, targetfilename, status, type, customer_id, targetpath, gid, cid)
+                                                using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
+                                                {
+                                                    conn.Open();
+                                                    type_temp = type;
+                                                    type = "XML";
+                                                    string sql = String.Format(@"INSERT INTO TB_FTP_QUEUE (starttime, archive_pk, clip_pk, srcpath, targetfilename, status, type, customer_id, targetpath, gid, cid)
                                                 VALUES( CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', '{3}', 'Ready', '{4}', '{6}', '{5}', '{7}', '{8}')", pk, clip_pk, Util.escapedPath(Path.GetDirectoryName(dstpath) + @"\" + cid + ".xml"), Path.GetFileNameWithoutExtension(ftpDestFileName) + ".xml", type, ftptargetpath, customer, gid, cid);
-                                                cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                                                cmd.ExecuteNonQuery();
-                                                connPool.ConnectionClose();
+                                                    MySqlCommand cmd = new MySqlCommand(sql, conn);
+                                                    cmd.ExecuteNonQuery();
+                                                }
                                             }
                                         }
                                         //FTP_QUEUE 등록
-                                        //String uuidFileName = Guid.NewGuid().ToString().ToUpper() + Path.GetExtension(m_dstpath);                                                                
+                                        //String uuidFileName = Guid.NewGuid().ToString().ToUpper() + Path.GetExtension(m_dstpath);
                                         if (!String.IsNullOrEmpty(type_temp))
                                         {
                                             type = type_temp;
                                         }
-                                        
+
                                         // BBMC 는 img를 보내면 안됨 2018-01-11
-                                        if (!(customer == "1" && (type.ToLower() == "img" || Path.GetExtension(dstpath).ToLower() == ".srt" || Path.GetExtension(dstpath).ToLower() == ".xml" )) )
+                                        if (!(customer == "1" && (type.ToLower() == "img" || Path.GetExtension(dstpath).ToLower() == ".srt" || Path.GetExtension(dstpath).ToLower() == ".xml")))
                                         {
                                             log.logging(String.Format("cid : {0}, yt_videoid : {1}", cid, yt_videoid));
-                                            connPool.ConnectionOpen();
-                                            m_sql = String.Format(@"INSERT INTO TB_FTP_QUEUE (starttime, archive_pk, clip_pk, srcpath, targetfilename, status, type, customer_id, targetpath, gid, cid)
+                                            using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
+                                            {
+                                                conn.Open();
+                                                string sql = String.Format(@"INSERT INTO TB_FTP_QUEUE (starttime, archive_pk, clip_pk, srcpath, targetfilename, status, type, customer_id, targetpath, gid, cid)
                                             VALUES( CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', '{3}', 'Pending', '{4}', '{6}', '{5}', '{7}', '{8}')",
                                             pk,
                                             clip_pk,
@@ -306,14 +327,14 @@ namespace MBCPLUS_DAEMON
                                             customer,
                                             gid,
                                             cid);
-                                            cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                                            cmd.ExecuteNonQuery();
-                                            connPool.ConnectionClose();
+                                                MySqlCommand cmd = new MySqlCommand(sql, conn);
+                                                cmd.ExecuteNonQuery();
+                                            }
                                         }
                                     }
                                 }
                                 else
-                                {                                    
+                                {
                                     mapper.UpdateClipStatus(cid, "Completed");
                                 }
                             }
@@ -321,7 +342,7 @@ namespace MBCPLUS_DAEMON
                             {
                                 //copy 실패
                                 log.logging(String.Format("Copy failed ({0} -> {1}", srcpath, dstpath));
-                            }                            
+                            }
                         }
                         catch (Exception ex)
                         {
@@ -339,7 +360,7 @@ namespace MBCPLUS_DAEMON
                 Thread.Sleep(1000);
                 ds.Clear();
             }
-            connPool.ConnectionDisPose();
+
             log.logging("Thread Terminate");
         }
     }

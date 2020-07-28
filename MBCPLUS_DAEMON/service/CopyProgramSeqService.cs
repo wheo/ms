@@ -12,17 +12,16 @@ using MySql.Data.MySqlClient;
 
 namespace MBCPLUS_DAEMON
 {
-    class CopyProgramSeqService
-    {        
+    internal class CopyProgramSeqService
+    {
         private Boolean _shouldStop = false;
         private String m_edit_count_tail = "";
         private String m_srcpath;
-        private String m_dstpath;        
+        private String m_dstpath;
         private String m_pk;
         private String m_program_seq_pk;
         private String m_gid;
-        private String m_sql = "";       
-        private ConnectionPool connPool;
+
         private SqlMapper mapper;
 
         private Log log;
@@ -34,7 +33,7 @@ namespace MBCPLUS_DAEMON
             DoWork();
         }
 
-        void DoWork()
+        private void DoWork()
         {
             mapper = new SqlMapper();
             Thread t1 = new Thread(new ThreadStart(Run));
@@ -43,18 +42,15 @@ namespace MBCPLUS_DAEMON
 
         public void RequestStop()
         {
-            _shouldStop = true;            
+            _shouldStop = true;
         }
 
-        void Run()
+        private void Run()
         {
-            DataSet ds = new DataSet();            
+            DataSet ds = new DataSet();
             String status = null;
             String type = null;
-            MySqlCommand cmd;
-            connPool = new ConnectionPool();
-            connPool.SetConnection(new MySqlConnection(Singleton.getInstance().GetStrConn()));
-            
+
             //Waiting for make winform
             Thread.Sleep(5000);
             //frmMain.WriteLogThread("Copying Program seq Service Start...");
@@ -76,12 +72,15 @@ namespace MBCPLUS_DAEMON
                         m_gid = r["gid"].ToString();
                         status = r["status"].ToString();
                         type = r["type"].ToString();
-                        connPool.ConnectionOpen();
-                        m_sql = String.Format("UPDATE TB_ARCHIVE SET starttime = CURRENT_TIMESTAMP(), status = 'Running' WHERE archive_pk = '{0}'", m_pk);
-                        //Running 으로 변경
-                        cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                        cmd.ExecuteNonQuery();
-                        connPool.ConnectionClose();
+
+                        using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
+                        {
+                            conn.Open();
+                            string sql = String.Format("UPDATE TB_ARCHIVE SET starttime = CURRENT_TIMESTAMP(), status = 'Running' WHERE archive_pk = '{0}'", m_pk);
+                            //Running 으로 변경
+                            MySqlCommand cmd = new MySqlCommand(sql, conn);
+                            cmd.ExecuteNonQuery();
+                        }
 
                         frmMain.WriteLogThread(String.Format(@"archive_pk({0}) is Running", m_pk));
                         if (!String.IsNullOrEmpty(m_srcpath) && !String.IsNullOrEmpty(m_dstpath))
@@ -95,11 +94,13 @@ namespace MBCPLUS_DAEMON
                             copier.Copy();
 
                             //Completed 로 변경
-                            connPool.ConnectionOpen();
-                            m_sql = String.Format(@"UPDATE TB_ARCHIVE SET endtime = CURRENT_TIMESTAMP(), status = 'Completed' WHERE archive_pk = '{0}'", m_pk);
-                            cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                            cmd.ExecuteNonQuery();
-                            connPool.ConnectionClose();
+                            using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
+                            {
+                                conn.Open();
+                                string sql = String.Format(@"UPDATE TB_ARCHIVE SET endtime = CURRENT_TIMESTAMP(), status = 'Completed' WHERE archive_pk = '{0}'", m_pk);
+                                MySqlCommand cmd = new MySqlCommand(sql, conn);
+                                cmd.ExecuteNonQuery();
+                            }
 
                             //Z:\mbcplus\archive\sports\2016\10\31\GA201610310001\CA201610310001\160824_0824_모비스vs동부_C_05_2쿼터_모처럼_속공_성공시키는_전준범.mp4
                             String convert_targetpath = m_dstpath.Substring(2, m_dstpath.Length - 2).Replace('\\', '/');
@@ -121,50 +122,57 @@ namespace MBCPLUS_DAEMON
                             {
                                 type_name = "archive_script";
                                 tail = "_SCRIPT";
-                            }                            
+                            }
 
                             frmMain.WriteLogThread(convert_targetpath);
-                            connPool.ConnectionOpen();
-                            m_sql = String.Format(@"UPDATE TB_PROGRAM_SEQ SET {2} = '{0}' WHERE program_seq_pk = '{1}'", convert_targetpath, m_program_seq_pk, type_name);
-                            cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                            cmd.ExecuteNonQuery();
-                            connPool.ConnectionClose();
+                            using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
+                            {
+                                conn.Open();
+                                string sql = String.Format(@"UPDATE TB_PROGRAM_SEQ SET {2} = '{0}' WHERE program_seq_pk = '{1}'", convert_targetpath, m_program_seq_pk, type_name);
+                                MySqlCommand cmd = new MySqlCommand(sql, conn);
+                                cmd.ExecuteNonQuery();
+                            }
 
                             // 원본 파일을 삭제
                             //File.Delete(m_srcpath);
                             //frmMain.WriteLogThread(String.Format(@"[CopyProgramService] {0} is deleted", m_srcpath));
 
                             //SEQ 상태를 Sending 로 변경
-                            connPool.ConnectionOpen();
-                            m_sql = String.Format(@"UPDATE TB_PROGRAM_SEQ SET status = 'Sending' WHERE program_seq_pk = '{0}'", m_program_seq_pk);
-                            cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                            cmd.ExecuteNonQuery();
-                            connPool.ConnectionClose();
+                            using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
+                            {
+                                conn.Open();
+                                string sql = String.Format(@"UPDATE TB_PROGRAM_SEQ SET status = 'Sending' WHERE program_seq_pk = '{0}'", m_program_seq_pk);
+                                MySqlCommand cmd = new MySqlCommand(sql, conn);
+                                cmd.ExecuteNonQuery();
+                            }
 
                             String ftptargetpath = "";
                             ftptargetpath = System.IO.Path.GetDirectoryName(m_dstpath);
-                            ftptargetpath = ftptargetpath.Replace(@"Z:\", "");                                
+                            ftptargetpath = ftptargetpath.Replace(@"Z:\", "");
                             ftptargetpath = ftptargetpath.Replace(@"\", "/");
                             frmMain.WriteLogThread(ftptargetpath);
 
                             //FTP_QUEUE 등록
-                            //String uuidFileName = Guid.NewGuid().ToString().ToUpper() + Path.GetExtension(m_dstpath);   
+                            //String uuidFileName = Guid.NewGuid().ToString().ToUpper() + Path.GetExtension(m_dstpath);
 
                             String FileName = "";
                             if (String.IsNullOrEmpty(m_edit_count_tail))
                             {
                                 FileName = String.Format("{0}{1}{2}", m_gid.ToUpper(), tail, Path.GetExtension(m_dstpath));
-                            } else
+                            }
+                            else
                             {
                                 FileName = String.Format("{0}{1}{2}{3}", m_gid.ToUpper(), tail, m_edit_count_tail, Path.GetExtension(m_dstpath));
                             }
                             // 회차 이미지는 customer_id : 2  LG_CDN으로 보냄
-                            connPool.ConnectionOpen();
-                            m_sql = String.Format(@"INSERT INTO TB_FTP_QUEUE (starttime, archive_pk, program_seq_pk, srcpath, targetfilename, status, type, customer_id, targetpath, gid)
+                            using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
+                            {
+                                conn.Open();
+                                string sql = String.Format(@"INSERT INTO TB_FTP_QUEUE (starttime, archive_pk, program_seq_pk, srcpath, targetfilename, status, type, customer_id, targetpath, gid)
                                                 VALUES( CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', '{3}', 'Pending', '{4}', '{7}', '{5}', '{6}')", m_pk, m_program_seq_pk, Util.escapedPath(m_dstpath), FileName, type, ftptargetpath, m_gid, "2");
-                            cmd = new MySqlCommand(m_sql, connPool.getConnection());
-                            cmd.ExecuteNonQuery();
-                            connPool.ConnectionClose();
+                                MySqlCommand cmd = new MySqlCommand(sql, conn);
+                                cmd.ExecuteNonQuery();
+                            }
                         }
                     }
                 }
@@ -173,10 +181,10 @@ namespace MBCPLUS_DAEMON
                     frmMain.WriteLogThread(e.ToString());
                     log.logging(e.ToString());
                 }
-                Thread.Sleep(1000);                
+                Thread.Sleep(1000);
                 ds.Clear();
             }
-            connPool.ConnectionDisPose();
+
             log.logging("Thread Terminate");
         }
     }

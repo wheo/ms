@@ -18,7 +18,7 @@ using System.Net.Http;
 
 namespace MBCPLUS_DAEMON
 {
-    class FTPMgr
+    internal class FTPMgr
     {
         private String m_strSourcePath;
         private String m_strTargetPath;
@@ -32,21 +32,17 @@ namespace MBCPLUS_DAEMON
         private String m_pw;
         private String m_customer_id;
         private String m_port;
-        private String m_alais_YN;        
+        private String m_alais_YN;
         private String m_gid;
         private String m_cid;
         private String m_pk;
         private Log log;
-        private ConnectionPool m_conn;
         private SqlMapper mapper;
         private int retryLimitCount = 5;
 
-        //private MySqlConnection m_conn;
-
-        public FTPMgr(ConnectionPool conn)
+        public FTPMgr()
         {
             mapper = new SqlMapper();
-            m_conn = conn;
             log = new Log(this.GetType().Name);
             m_alais_YN = "N";
         }
@@ -71,14 +67,14 @@ namespace MBCPLUS_DAEMON
                 m_ftppath = m_strTargetPathWithoutFileName;
                 m_uploadPath = String.Format("{0}:{1}/{2}", m_host, m_port, m_strTargetPath);
             }
-            else if( m_alais_YN == "N")
+            else if (m_alais_YN == "N")
             {
                 m_path = String.Format(@"{0}/{1}", m_path, m_gid);
                 m_uploadPath = String.Format("{0}:{1}/{2}/{3}", m_host, m_port, m_path, Path.GetFileName(m_strTargetPath));
                 m_ftppath = m_path;
             }
             else if (m_alais_YN == "Y")
-            {                
+            {
                 m_uploadPath = String.Format("{0}:{1}/{2}/{3}", m_host, m_port, m_path, Util.replaceSpaceChar(m_strTargetPath));
                 m_ftppath = String.Format(@"{0}/{1}", m_path, Util.replaceSpaceChar(Path.GetDirectoryName(m_strTargetPath).Replace(@"\", "/")));
             }
@@ -102,7 +98,7 @@ namespace MBCPLUS_DAEMON
         private void SessionFileTransferProgress(object sender, FileTransferProgressEventArgs e)
         {
             //log.logging(String.Format("FileName : {0} ({1})", e.FileName, e.FileProgress));
-            mapper.UpdateSendingProgress(m_pk, (double)e.FileProgress*100);            
+            mapper.UpdateSendingProgress(m_pk, (double)e.FileProgress * 100);
         }
 
         public Boolean SendDailymotion(String type, DMInfo dmInfo)
@@ -145,7 +141,7 @@ namespace MBCPLUS_DAEMON
                 String progress_url = (String)obj["progress_url"];
                 response = dmInfo.DmVideoUpload(upload_url, progress_url, m_strSourcePath, m_pk);
                 log.logging(response);
-                
+
                 obj = JObject.Parse(response);
                 String videourl = (String)obj["url"];
 
@@ -154,7 +150,7 @@ namespace MBCPLUS_DAEMON
                 response = dmInfo.DmCreateVideo(url_create, videourl, accesstoken);
                 log.logging(response);
 
-                obj = JObject.Parse(response);                
+                obj = JObject.Parse(response);
                 videoid = (String)obj["id"];
                 mapper.UpdateDMVideoid(m_cid, videoid);
                 String[] playlist_ids = dmInfo.playlistid.Split(',');
@@ -190,7 +186,7 @@ namespace MBCPLUS_DAEMON
                     log.logging("caption response : " + response);
                 }
             }
-            catch(WebException e)
+            catch (WebException e)
             {
                 String responseText = null;
                 var responseStream = e.Response?.GetResponseStream();
@@ -217,7 +213,7 @@ namespace MBCPLUS_DAEMON
                 return false;
             }
             String destPath = String.Format("/{0}_{1}/{2}", Path.GetFileNameWithoutExtension(m_strSourcePath), ytInfo.session_id, Path.GetFileName(m_strSourcePath));
-            
+
             if (yt_SendFile(m_strSourcePath, destPath))
             {
                 if (Path.GetExtension(m_strSourcePath).ToLower() == ".mp4")
@@ -225,12 +221,11 @@ namespace MBCPLUS_DAEMON
                     ytInfo.movpath = m_strSourcePath;
                     ytInfo.IsMovCompleted = true;
                 }
-                else if (Path.GetExtension(m_strSourcePath).ToLower() == ".jpg" || Path.GetExtension(m_strSourcePath).ToLower() == ".png" )
+                else if (Path.GetExtension(m_strSourcePath).ToLower() == ".jpg" || Path.GetExtension(m_strSourcePath).ToLower() == ".png")
                 {
-                    ytInfo.custom_thumbnail = Path.GetFileName(m_strSourcePath);                    
+                    ytInfo.custom_thumbnail = Path.GetFileName(m_strSourcePath);
                 }
-
-                else if (Path.GetExtension(m_strSourcePath).ToLower() == ".srt" )
+                else if (Path.GetExtension(m_strSourcePath).ToLower() == ".srt")
                 {
                     ytInfo.caption_file = Path.GetFileName(m_strSourcePath);
                 }
@@ -244,7 +239,7 @@ namespace MBCPLUS_DAEMON
 
         public Boolean yt_deliveryCompleteSendFile(String destPath)
         {
-            yt_SendFile("delivery.complete", String.Format("/{0}/delivery.complete", Path.GetDirectoryName(destPath).Replace(@"\","")));
+            yt_SendFile("delivery.complete", String.Format("/{0}/delivery.complete", Path.GetDirectoryName(destPath).Replace(@"\", "")));
             return true;
         }
 
@@ -307,7 +302,7 @@ namespace MBCPLUS_DAEMON
                         //Throw on any error
                         transferResult.Check();
 
-                        //Print Result                    
+                        //Print Result
                         foreach (TransferEventArgs e in transferResult.Transfers)
                         {
                             log.logging(String.Format("Upload of {0} is succeeded", e.FileName));
@@ -325,20 +320,23 @@ namespace MBCPLUS_DAEMON
             }
             return false;
         }
-        public Boolean Legacycheck(vo.FtpInfo ftpInfo )
+
+        public Boolean Legacycheck(vo.FtpInfo ftpInfo)
         {
             String deleteFilename = "";
-            if ( ftpInfo.clip_mov_edit_count > 2)
+            if (ftpInfo.clip_mov_edit_count > 2)
             {
                 // count 하나 감소하고 지우기
                 m_strTargetPathWithoutFileName = Path.GetDirectoryName(m_strTargetPath).Replace(@"\", "/");
                 m_ftppath = m_strTargetPathWithoutFileName;
-                deleteFilename = String.Format("{0}_{1}{2}", Path.GetFileNameWithoutExtension(ftpInfo.old_targetfilename), (ftpInfo.clip_mov_edit_count -2).ToString("D2"), Path.GetExtension(ftpInfo.old_targetfilename));                
-            } else if ( ftpInfo.clip_mov_edit_count == 2) {
+                deleteFilename = String.Format("{0}_{1}{2}", Path.GetFileNameWithoutExtension(ftpInfo.old_targetfilename), (ftpInfo.clip_mov_edit_count - 2).ToString("D2"), Path.GetExtension(ftpInfo.old_targetfilename));
+            }
+            else if (ftpInfo.clip_mov_edit_count == 2)
+            {
                 //원래 이름 지우기
                 deleteFilename = ftpInfo.old_targetfilename;
             }
-            else if ( ftpInfo.clip_mov_edit_count < 2)
+            else if (ftpInfo.clip_mov_edit_count < 2)
             {
                 return false;
             }
@@ -389,9 +387,9 @@ namespace MBCPLUS_DAEMON
             FtpWebResponse responseMkdir = null;
             String[] subDirs;
             String currenDir;
-            currenDir = String.Format(@"{0}:{1}", m_host, m_port);                        
-            
-            subDirs = m_ftppath.Split('/');                                            
+            currenDir = String.Format(@"{0}:{1}", m_host, m_port);
+
+            subDirs = m_ftppath.Split('/');
             foreach (String subDir in subDirs)
             {
                 try
@@ -408,13 +406,13 @@ namespace MBCPLUS_DAEMON
                     requestMkdir.Credentials = new NetworkCredential(m_id, m_pw);
 
                     //log.logging("[FTPMgr] Before Mkdir : " + currenDir);
-                    responseMkdir = (FtpWebResponse)requestMkdir.GetResponse();                    
+                    responseMkdir = (FtpWebResponse)requestMkdir.GetResponse();
                     frmMain.WriteLogThread("[FTPMgr] Folder Make Successful " + currenDir);
                     log.logging("[FTPMgr] Folder Make Successful : " + responseMkdir.StatusCode.ToString());
                     log.logging("[FTPMgr] code description : " + responseMkdir.StatusDescription.ToString());
-                    responseMkdir.Close();                    
+                    responseMkdir.Close();
                 }
-                catch 
+                catch
                 {
                     //frmMain.WriteLogThread("[FTPMgr:MakeDir] " + e.ToString());
                     //log.logging(e.ToString());
@@ -430,7 +428,7 @@ namespace MBCPLUS_DAEMON
                     }
                 }
             }
-            
+
             int failcnt = 0;
             bool isSuccess = true;
 
@@ -499,7 +497,7 @@ namespace MBCPLUS_DAEMON
                 return true;
             }
             else
-            {                
+            {
                 return false;
             }
         }

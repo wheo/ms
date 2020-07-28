@@ -170,7 +170,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="class\MediaInfomation.cs" />
-    <Compile Include="ConnectionPool.cs" />
     <Compile Include="database\SqlMapper.cs" />
     <Compile Include="service\ArchiveSmrProgramService.cs" />
     <Compile Include="service\BroadPlanService.cs" />
