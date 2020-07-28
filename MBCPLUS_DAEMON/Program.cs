@@ -106,7 +106,6 @@ namespace MBCPLUS_DAEMON
                 programSeqService.RequestStop();
                 //clipService.RequestStop();
                 
-                
                 if (!Singleton.getInstance().Test)
                 {
                     dailymotionService.RequestStop();

@@ -12,18 +12,18 @@ namespace MBCPLUS_DAEMON
 {
     class SqlMapper
     {
-        private String strConn;
+        private String _strConn;
         //private String m_gid;
         ConnectionPool connPool;
-        String m_sql;
+        String _sql;
         MySqlCommand cmd;
         Log logger;
 
         public SqlMapper()
         {
-            strConn = Singleton.getInstance().GetStrConn();
+            _strConn = Singleton.getInstance().GetStrConn();
             connPool = new ConnectionPool();
-            connPool.SetConnection(new MySqlConnection(strConn));             
+            connPool.SetConnection(new MySqlConnection(_strConn));             
             logger = new Log(this.GetType().Name);
         }
 
@@ -35,12 +35,12 @@ namespace MBCPLUS_DAEMON
         public bool SetDMPlayList(String id, String name, int ordernum)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"INSERT INTO TB_DM_PLAYLIST(id, name, ordernum)
+            _sql = String.Format(@"INSERT INTO TB_DM_PLAYLIST(id, name, ordernum)
                                                   VALUES ('{0}', @name, {1})
                                                   ON DUPLICATE KEY UPDATE id = '{0}', name = @name, ordernum = {1}"
                 ,id, ordernum);
 
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.Parameters.Add(new MySqlParameter("@name", name));
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
@@ -50,8 +50,8 @@ namespace MBCPLUS_DAEMON
         public bool DeleteYTPlayList()
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"DELETE FROM TB_YT_PLAYLIST");
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            _sql = String.Format(@"DELETE FROM TB_YT_PLAYLIST");
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -60,12 +60,12 @@ namespace MBCPLUS_DAEMON
         public bool SETYTPlayList(String id, String name, String channel_id, int ordernum)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"INSERT INTO TB_YT_PLAYLIST(id, name, order_num, channel_id)
+            _sql = String.Format(@"INSERT INTO TB_YT_PLAYLIST(id, name, order_num, channel_id)
                                                   VALUES ('{0}', @name, {1}, '{2}')
                                                   ON DUPLICATE KEY UPDATE id = '{0}', name = @name, order_num = {1}, channel_id = '{2}'"
                 , id, ordernum, channel_id);
 
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.Parameters.Add(new MySqlParameter("@name", name));
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
@@ -77,12 +77,12 @@ namespace MBCPLUS_DAEMON
             for (int i = 0; i < list.Count; i++)
             {
                 connPool.ConnectionOpen();
-                m_sql = String.Format(@"INSERT INTO TB_YT_CHANNELLIST(id, name)
+                _sql = String.Format(@"INSERT INTO TB_YT_CHANNELLIST(id, name)
                                                   VALUES ('{0}', @name)
                                                   ON DUPLICATE KEY UPDATE id = '{0}', name = @name"
                     , list[i]["id"]);
 
-                cmd = new MySqlCommand(m_sql, connPool.getConnection());
+                cmd = new MySqlCommand(_sql, connPool.getConnection());
                 cmd.Parameters.Add(new MySqlParameter("@name", list[i]["name"]));
                 cmd.ExecuteNonQuery();
                 connPool.ConnectionClose();
@@ -93,11 +93,11 @@ namespace MBCPLUS_DAEMON
         public bool GetYTChannelList(DataSet ds)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"SELECT id, name
+            _sql = String.Format(@"SELECT id, name
                                     FROM TB_YT_CHANNELLIST
                                     ORDER BY order_num ASC
                                     ");            
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "YTC");            
             connPool.ConnectionClose();
             return true;
@@ -106,8 +106,8 @@ namespace MBCPLUS_DAEMON
         public bool DeleteYTChannelList()
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"DELETE FROM TB_YT_CHANNELLIST");
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            _sql = String.Format(@"DELETE FROM TB_YT_CHANNELLIST");
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -116,11 +116,11 @@ namespace MBCPLUS_DAEMON
         public bool GetYTAccountList(DataSet ds)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"SELECT channel_id, name, keyfile
+            _sql = String.Format(@"SELECT channel_id, name, keyfile
                                     FROM TB_YT_ACCOUNT                                    
                                     ORDER BY order_num ASC
                                     ");
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "YTA");
             connPool.ConnectionClose();
             return true;
@@ -129,11 +129,11 @@ namespace MBCPLUS_DAEMON
         public bool GetYTAccountList(DataSet ds, String channel_id)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"SELECT channel_id, name, keyfile
+            _sql = String.Format(@"SELECT channel_id, name, keyfile
                                     FROM TB_YT_ACCOUNT
                                     WHERE channel_id = '{0}'
                                     ", channel_id);
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "YTA");
             connPool.ConnectionClose();
             return true;
@@ -143,7 +143,7 @@ namespace MBCPLUS_DAEMON
         {
             // Published at 형식 2018-02-23T02:12:17.000Z
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"SELECT
+            _sql = String.Format(@"SELECT
                                     YT.cid
                                     , YT.videoid
                                     , YT.channel_id
@@ -173,7 +173,7 @@ namespace MBCPLUS_DAEMON
                                     ");
             //2018-02-23T06:58:21.000Z
             //MySqlTransaction trans = connPool.getConnection().BeginTransaction();
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "YT_RDY");
             //trans.Commit();
             connPool.ConnectionClose();
@@ -184,22 +184,22 @@ namespace MBCPLUS_DAEMON
         {
             // Published at 형식 2018-02-23T02:12:17.000Z
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"SELECT
+            _sql = String.Format(@"SELECT
                                     YIF.status                                     
                                     FROM TB_YT_INTERFACE YIF
                                     WHERE 1=1
                                     AND name = 'channelNplaylist'
                                     AND YIF.status = 'UpdateList'
                                     ");            
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "YT_IF");            
             connPool.ConnectionClose();            
             if (ds.Tables[0].Rows.Count > 0)
             {
                 ds.Clear();
                 connPool.ConnectionOpen();
-                m_sql = String.Format("UPDATE TB_YT_INTERFACE SET status = 'Prepare' WHERE name = 'channelNplaylist'");                
-                cmd = new MySqlCommand(m_sql, connPool.getConnection());
+                _sql = String.Format("UPDATE TB_YT_INTERFACE SET status = 'Prepare' WHERE name = 'channelNplaylist'");                
+                cmd = new MySqlCommand(_sql, connPool.getConnection());
                 cmd.ExecuteNonQuery();
                 connPool.ConnectionClose();
                 return true;
@@ -212,7 +212,7 @@ namespace MBCPLUS_DAEMON
         {
             // Published at 형식 2018-02-23T02:12:17.000Z
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"SELECT
+            _sql = String.Format(@"SELECT
                                     YT.cid
                                     , YT.videoid
                                     , YT.channel_id
@@ -240,7 +240,7 @@ namespace MBCPLUS_DAEMON
                                     ");
             //2018-02-23T06:58:21.000Z
             //MySqlTransaction trans = connPool.getConnection().BeginTransaction();
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "YT_REQ");
             //trans.Commit();
             connPool.ConnectionClose();
@@ -250,7 +250,7 @@ namespace MBCPLUS_DAEMON
         public bool YoutubePendingCheck(DataSet ds)
         {            
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"SELECT
+            _sql = String.Format(@"SELECT
                                     YT.cid
                                     , YT.videoid
                                     , C.archive_img as srcimg
@@ -263,7 +263,7 @@ namespace MBCPLUS_DAEMON
                                     WHERE 1=1
                                     AND YT.status = 'Pending'
                                     ");
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "YT_Pending");
             //trans.Commit();
             connPool.ConnectionClose();
@@ -273,7 +273,7 @@ namespace MBCPLUS_DAEMON
         public bool DailymotionPendingCheck(DataSet ds)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"SELECT
+            _sql = String.Format(@"SELECT
                                     DM.cid
                                     , DM.videoid
                                     , C.archive_img as srcimg
@@ -284,7 +284,7 @@ namespace MBCPLUS_DAEMON
                                     WHERE 1=1
                                     AND DM.status = 'Pending'
                                     ");
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "DM_Pending");
             //trans.Commit();
             connPool.ConnectionClose();
@@ -294,7 +294,7 @@ namespace MBCPLUS_DAEMON
         public bool GetDMReady(DataSet ds)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"SELECT DM.cid as cid
+            _sql = String.Format(@"SELECT DM.cid as cid
                                     , DM.videoid
                                     , DM.playlistid as playlistid
                                     , DM.old_playlistid as old_playlistid
@@ -318,7 +318,7 @@ namespace MBCPLUS_DAEMON
                                     AND DM.status = 'Ready'
                                     ");
             //MySqlTransaction trans = connPool.getConnection().BeginTransaction();
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "DM_READY");
             //trans.Commit();
             connPool.ConnectionClose();
@@ -328,7 +328,7 @@ namespace MBCPLUS_DAEMON
         public bool GetEditYoutubeMeta(DataSet ds)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"SELECT
+            _sql = String.Format(@"SELECT
                                     cid
                                     , videoid
                                     , assetid
@@ -356,7 +356,7 @@ namespace MBCPLUS_DAEMON
                                     AND YT.status = 'Edit'
                                     LIMIT 0,1");
             //MySqlTransaction trans = connPool.getConnection().BeginTransaction();
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "E_YT");
             //trans.Commit();
             connPool.ConnectionClose();
@@ -366,7 +366,7 @@ namespace MBCPLUS_DAEMON
         public bool GetCallbakInfo(DataSet ds)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"SELECT
+            _sql = String.Format(@"SELECT
                                     CB.callback_pk
                                     , CB.tc_pk
                                     , CB.program_seq_pk
@@ -393,7 +393,7 @@ namespace MBCPLUS_DAEMON
                                     AND CB.status = 'Pending'
                                     LIMIT 0,1");
             //MySqlTransaction trans = connPool.getConnection().BeginTransaction();
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "CDN");
             //trans.Commit();
             connPool.ConnectionClose();
@@ -403,9 +403,9 @@ namespace MBCPLUS_DAEMON
         public bool UpdateProgramStatus(String type, String pid)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format("UPDATE TB_PROGRAM SET job_endtime = CURRENT_TIMESTAMP(), status = '{0}' WHERE pid = '{1}'", "Completed", pid);
+            _sql = String.Format("UPDATE TB_PROGRAM SET job_endtime = CURRENT_TIMESTAMP(), status = '{0}' WHERE pid = '{1}'", "Completed", pid);
             //Running 으로 변경
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -414,9 +414,9 @@ namespace MBCPLUS_DAEMON
         public bool UpdateSmrProgramStatus(String type, String pid)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format("UPDATE TB_SMR_PROGRAM SET edit_time = CURRENT_TIMESTAMP(), status = 'Completed' WHERE pid = '{0}'", pid);
+            _sql = String.Format("UPDATE TB_SMR_PROGRAM SET edit_time = CURRENT_TIMESTAMP(), status = 'Completed' WHERE pid = '{0}'", pid);
             //Running 으로 변경
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -428,12 +428,12 @@ namespace MBCPLUS_DAEMON
             hls_url = hls_url.Replace("mbcplusvod/_definst_", "idolvod/_definst_");
             hls_url = hls_url.Replace("mp4:mbcplus_mbcpvod", "mp4:mbcplus_mbcpidol");
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"INSERT INTO TB_CLIP_INFO(insert_time, edit_date, gid, cid, typeid, url, pooq_itemid)
+            _sql = String.Format(@"INSERT INTO TB_CLIP_INFO(insert_time, edit_date, gid, cid, typeid, url, pooq_itemid)
                                                   VALUES (CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', '{3}', '0')
                                                   ON DUPLICATE KEY UPDATE edit_date = CURRENT_TIMESTAMP(), gid = '{0}', cid = '{1}', typeid = '{2}', url = '{3}'"
                 , gid, cid, typeid, hls_url);
 
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -442,7 +442,7 @@ namespace MBCPLUS_DAEMON
         public bool GetArchiveProgramSeqServiceInfo(DataSet ds)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"SELECT
+            _sql = String.Format(@"SELECT
                                     PS.program_seq_pk
                                     , PS.imgsrcpath
                                     , PS.orgimgname
@@ -464,7 +464,7 @@ namespace MBCPLUS_DAEMON
                                     WHERE PS.STATUS = 'Pending'
                                     LIMIT 0,1");
             //MySqlTransaction trans = connPool.getConnection().BeginTransaction();
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "ARCHIVE_PROGRAM");
             //trans.Commit();
             connPool.ConnectionClose();
@@ -474,7 +474,7 @@ namespace MBCPLUS_DAEMON
         public bool GetProgramService(DataSet ds)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"SELECT
+            _sql = String.Format(@"SELECT
                                 P.seq as pk
                                 , P.pid as pid          
                                 , P.imgsrcpath as src_img
@@ -501,7 +501,7 @@ namespace MBCPLUS_DAEMON
                                 AND status = 'Pending'
                                 LIMIT 0,1");
             //MySqlTransaction trans = connPool.getConnection().BeginTransaction();
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "PROGRAM");
             //trans.Commit();
             connPool.ConnectionClose();
@@ -511,7 +511,7 @@ namespace MBCPLUS_DAEMON
         public bool GetProgramSmrService(DataSet ds)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"SELECT                                
+            _sql = String.Format(@"SELECT                                
                                 SP.pid as pid          
                                 , SP.img as img
                                 , SP.org_img as org_img
@@ -534,7 +534,7 @@ namespace MBCPLUS_DAEMON
                                 AND status = 'Pending'
                                 LIMIT 0,1");
             //MySqlTransaction trans = connPool.getConnection().BeginTransaction();
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "SMR_PROGRAM");
             //trans.Commit();
             connPool.ConnectionClose();
@@ -552,13 +552,13 @@ namespace MBCPLUS_DAEMON
                 {
                     edit_count_string = String.Format("_{0}", (programInfo.edit_img_count - 1).ToString("D2"));
                 }
-                m_sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, pid, srcpath, targetpath, type, status, program_img_type, edit_count_tail)
+                _sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, pid, srcpath, targetpath, type, status, program_img_type, edit_count_tail)
                                                   VALUES (CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', 'IMG', 'Pending', 1, '{3}')", programInfo.pid
                                                   , Util.escapedPath(programInfo.img)
                                                   , Util.escapedPath(programInfo.targetpath + Path.DirectorySeparatorChar + programInfo.pid + edit_count_string + Path.GetExtension(programInfo.org_img.ToLower()))
                                                   , edit_count_string);
 
-                cmd = new MySqlCommand(m_sql, connPool.getConnection());
+                cmd = new MySqlCommand(_sql, connPool.getConnection());
                 cmd.ExecuteNonQuery();
             }
 
@@ -569,12 +569,12 @@ namespace MBCPLUS_DAEMON
                 {
                     edit_count_string = String.Format("_{0}", (programInfo.edit_img_poster_count - 1).ToString("D2"));
                 }
-                m_sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, pid, srcpath, targetpath, type, status, program_img_type, edit_count_tail)
+                _sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, pid, srcpath, targetpath, type, status, program_img_type, edit_count_tail)
                                                   VALUES (CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', 'IMG', 'Pending', 2, '{3}')", programInfo.pid
                                                       , Util.escapedPath(programInfo.posterimg)
                                                       , Util.escapedPath(programInfo.targetpath + Path.DirectorySeparatorChar + programInfo.pid + "_P" + edit_count_string + Path.GetExtension(programInfo.org_posterimg.ToLower()))
                                                       , edit_count_string);
-                cmd = new MySqlCommand(m_sql, connPool.getConnection());
+                cmd = new MySqlCommand(_sql, connPool.getConnection());
                 cmd.ExecuteNonQuery();
             }
 
@@ -586,12 +586,12 @@ namespace MBCPLUS_DAEMON
                     edit_count_string = String.Format("_{0}", (programInfo.edit_img_thumb_count - 1).ToString("D2"));
                 }
 
-                m_sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, pid, srcpath, targetpath, type, status, program_img_type, edit_count_tail)
+                _sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, pid, srcpath, targetpath, type, status, program_img_type, edit_count_tail)
                                                   VALUES (CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', 'IMG', 'Pending', 3, '{3}')", programInfo.pid
                                                   , Util.escapedPath(programInfo.thumbimg)
                                                   , Util.escapedPath(programInfo.targetpath + Path.DirectorySeparatorChar + programInfo.pid + "_T" + edit_count_string + Path.GetExtension(programInfo.org_thumbimg.ToLower()))
                                                   , edit_count_string);
-                cmd = new MySqlCommand(m_sql, connPool.getConnection());
+                cmd = new MySqlCommand(_sql, connPool.getConnection());
                 cmd.ExecuteNonQuery();
             }
 
@@ -603,12 +603,12 @@ namespace MBCPLUS_DAEMON
                     edit_count_string = String.Format("_{0}", (programInfo.edit_img_circle_count - 1).ToString("D2"));
                 }
 
-                m_sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, pid, srcpath, targetpath, type, status, program_img_type, edit_count_tail)
+                _sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, pid, srcpath, targetpath, type, status, program_img_type, edit_count_tail)
                                                   VALUES (CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', 'IMG', 'Pending', 4, '{3}')", programInfo.pid
                                                   , Util.escapedPath(programInfo.circleimg)
                                                   , Util.escapedPath(programInfo.targetpath + Path.DirectorySeparatorChar + programInfo.pid + "_C" + edit_count_string + Path.GetExtension(programInfo.org_circleimg.ToLower()))
                                                   , edit_count_string);
-                cmd = new MySqlCommand(m_sql, connPool.getConnection());
+                cmd = new MySqlCommand(_sql, connPool.getConnection());
                 cmd.ExecuteNonQuery();
             }
 
@@ -620,12 +620,12 @@ namespace MBCPLUS_DAEMON
                     edit_count_string = String.Format("_{0}", (programInfo.edit_img_highres_count - 1).ToString("D2"));
                 }
 
-                m_sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, pid, srcpath, targetpath, type, status, program_img_type, edit_count_tail)
+                _sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, pid, srcpath, targetpath, type, status, program_img_type, edit_count_tail)
                                                   VALUES (CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', 'IMG', 'Pending', 5, '{3}')", programInfo.pid
                                                   , Util.escapedPath(programInfo.highresimg)
                                                   , Util.escapedPath(programInfo.targetpath + Path.DirectorySeparatorChar + programInfo.pid + "_H" + edit_count_string + Path.GetExtension(programInfo.org_highresimg.ToLower()))
                                                   , edit_count_string);
-                cmd = new MySqlCommand(m_sql, connPool.getConnection());
+                cmd = new MySqlCommand(_sql, connPool.getConnection());
                 cmd.ExecuteNonQuery();
             }
 
@@ -637,12 +637,12 @@ namespace MBCPLUS_DAEMON
                     edit_count_string = String.Format("_{0}", (programInfo.edit_img_logo_count - 1).ToString("D2"));
                 }
 
-                m_sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, pid, srcpath, targetpath, type, status, program_img_type, edit_count_tail)
+                _sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, pid, srcpath, targetpath, type, status, program_img_type, edit_count_tail)
                                                   VALUES (CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', 'IMG', 'Pending', 6, '{3}')", programInfo.pid
                                                   , Util.escapedPath(programInfo.logoimg)
                                                   , Util.escapedPath(programInfo.targetpath + Path.DirectorySeparatorChar + programInfo.pid + "_L" + edit_count_string + Path.GetExtension(programInfo.org_logoimg.ToLower()))
                                                   , edit_count_string);
-                cmd = new MySqlCommand(m_sql, connPool.getConnection());
+                cmd = new MySqlCommand(_sql, connPool.getConnection());
                 cmd.ExecuteNonQuery();
             }
 
@@ -667,13 +667,13 @@ namespace MBCPLUS_DAEMON
                 dstpath = Util.escapedPath(programSeqInfo.targetpath + Path.DirectorySeparatorChar + programSeqInfo.gid + edit_count_string + Path.GetExtension(programSeqInfo.orgimgname.ToLower()));
                 //mapper.ArchiveProgramSeq(programSeqInfo.pk, Util.escapedPath(programSeqInfo.imgsrcpath), dstpath, edit_count_string);
                 
-                m_sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, program_seq_pk, srcpath, targetpath, type, status, edit_count_tail)
+                _sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, program_seq_pk, srcpath, targetpath, type, status, edit_count_tail)
                                                 VALUES (CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', 'IMG', 'Pending', '{3}')", programSeqInfo.pk
                             , Util.escapedPath(programSeqInfo.imgsrcpath)
                             , dstpath
                             , edit_count_string);
 
-                cmd = new MySqlCommand(m_sql, connPool.getConnection());
+                cmd = new MySqlCommand(_sql, connPool.getConnection());
                 cmd.ExecuteNonQuery();                
             }
 
@@ -690,13 +690,13 @@ namespace MBCPLUS_DAEMON
                 dstpath = Util.escapedPath(programSeqInfo.targetpath + Path.DirectorySeparatorChar + programSeqInfo.gid+ "_CUE" + edit_count_string + Path.GetExtension(programSeqInfo.org_cue.ToLower()));
                 //mapper.ArchiveProgramSeq(programSeqInfo.pk, Util.escapedPath(programSeqInfo.imgsrcpath), dstpath, edit_count_string);
 
-                m_sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, program_seq_pk, srcpath, targetpath, type, status, edit_count_tail)
+                _sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, program_seq_pk, srcpath, targetpath, type, status, edit_count_tail)
                                                 VALUES (CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', 'CUE', 'Pending', '{3}')", programSeqInfo.pk
                             , Util.escapedPath(programSeqInfo.src_cue)
                             , dstpath
                             , edit_count_string);
 
-                cmd = new MySqlCommand(m_sql, connPool.getConnection());
+                cmd = new MySqlCommand(_sql, connPool.getConnection());
                 cmd.ExecuteNonQuery();
             }
 
@@ -713,13 +713,13 @@ namespace MBCPLUS_DAEMON
                 dstpath = Util.escapedPath(programSeqInfo.targetpath + Path.DirectorySeparatorChar + programSeqInfo.gid + "_SCRIPT" + edit_count_string + Path.GetExtension(programSeqInfo.org_script.ToLower()));
                 //mapper.ArchiveProgramSeq(programSeqInfo.pk, Util.escapedPath(programSeqInfo.imgsrcpath), dstpath, edit_count_string);
 
-                m_sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, program_seq_pk, srcpath, targetpath, type, status, edit_count_tail)
+                _sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, program_seq_pk, srcpath, targetpath, type, status, edit_count_tail)
                                                 VALUES (CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', 'SCRIPT', 'Pending', '{3}')", programSeqInfo.pk
                             , Util.escapedPath(programSeqInfo.src_script)
                             , dstpath
                             , edit_count_string);
 
-                cmd = new MySqlCommand(m_sql, connPool.getConnection());
+                cmd = new MySqlCommand(_sql, connPool.getConnection());
                 cmd.ExecuteNonQuery();
             }
 
@@ -731,13 +731,13 @@ namespace MBCPLUS_DAEMON
         public bool ArchiveProgramSeq(String pk, String sourcePath, String destPath, String edit_count_string)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, program_seq_pk, srcpath, targetpath, type, status, edit_count_tail)
+            _sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, program_seq_pk, srcpath, targetpath, type, status, edit_count_tail)
                                                 VALUES (CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', 'IMG', 'Pending', '{3}')", pk
                         , sourcePath
                         , destPath
                         , edit_count_string);
 
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -745,7 +745,7 @@ namespace MBCPLUS_DAEMON
 
         public bool ArchiveClip(String pk, String sourcePath, String destPath, String type, String cid, String edit_count_string)
         {            
-            m_sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, clip_pk, srcpath, targetpath, type, status, cid, edit_count_tail)
+            _sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, clip_pk, srcpath, targetpath, type, status, cid, edit_count_tail)
                                     VALUES (CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', '{4}', 'Pending', '{3}', '{5}')", pk
                                     , sourcePath
                                     , destPath
@@ -754,7 +754,7 @@ namespace MBCPLUS_DAEMON
                                     , edit_count_string);
 
             connPool.ConnectionOpen();
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -771,13 +771,13 @@ namespace MBCPLUS_DAEMON
                 {
                     edit_count_string = String.Format("_{0}", (smrProgramInfo.edit_img_count - 1).ToString("D2"));
                 }
-                m_sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, smr_pid, srcpath, targetpath, type, status, smr_img_type, edit_count_tail)
+                _sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, smr_pid, srcpath, targetpath, type, status, smr_img_type, edit_count_tail)
                                         VALUES (CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', 'IMG', 'Pending', 1, '{3}')", smrProgramInfo.pid
                                        , Util.escapedPath(smrProgramInfo.img)
                                        , Util.escapedPath(smrProgramInfo.targetpath + Path.DirectorySeparatorChar + smrProgramInfo.pid + edit_count_string + Path.GetExtension(smrProgramInfo.org_img.ToLower()))
                                        , edit_count_string);
 
-                cmd = new MySqlCommand(m_sql, connPool.getConnection());
+                cmd = new MySqlCommand(_sql, connPool.getConnection());
                 cmd.ExecuteNonQuery();
             }
 
@@ -788,12 +788,12 @@ namespace MBCPLUS_DAEMON
                 {
                     edit_count_string = String.Format("_{0}", (smrProgramInfo.edit_img_poster1_count - 1).ToString("D2"));
                 }
-                m_sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, smr_pid, srcpath, targetpath, type, status, smr_img_type, edit_count_tail)
+                _sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, smr_pid, srcpath, targetpath, type, status, smr_img_type, edit_count_tail)
                                         VALUES (CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', 'IMG', 'Pending', 2, '{3}')", smrProgramInfo.pid
                                         , Util.escapedPath(smrProgramInfo.posterimg1)
                                         , Util.escapedPath(smrProgramInfo.targetpath + Path.DirectorySeparatorChar + smrProgramInfo.pid + "_P1" + edit_count_string + Path.GetExtension(smrProgramInfo.org_posterimg1.ToLower()))
                                         , edit_count_string);
-                cmd = new MySqlCommand(m_sql, connPool.getConnection());
+                cmd = new MySqlCommand(_sql, connPool.getConnection());
                 cmd.ExecuteNonQuery();
             }
 
@@ -804,12 +804,12 @@ namespace MBCPLUS_DAEMON
                 {
                     edit_count_string = String.Format("_{0}", (smrProgramInfo.edit_img_poster2_count - 1).ToString("D2"));
                 }
-                m_sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, smr_pid, srcpath, targetpath, type, status, smr_img_type, edit_count_tail)
+                _sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, smr_pid, srcpath, targetpath, type, status, smr_img_type, edit_count_tail)
                                                   VALUES (CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', 'IMG', 'Pending', 3, '{3}')", smrProgramInfo.pid
                                                   , Util.escapedPath(smrProgramInfo.posterimg2)
                                                   , Util.escapedPath(smrProgramInfo.targetpath + Path.DirectorySeparatorChar + smrProgramInfo.pid + "_P2" + edit_count_string + Path.GetExtension(smrProgramInfo.org_posterimg2.ToLower()))
                                                   , edit_count_string);
-                cmd = new MySqlCommand(m_sql, connPool.getConnection());
+                cmd = new MySqlCommand(_sql, connPool.getConnection());
                 cmd.ExecuteNonQuery();
             }
 
@@ -820,12 +820,12 @@ namespace MBCPLUS_DAEMON
                 {
                     edit_count_string = String.Format("_{0}", (smrProgramInfo.edit_img_banner_count - 1).ToString("D2"));
                 }
-                m_sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, smr_pid, srcpath, targetpath, type, status, smr_img_type, edit_count_tail)
+                _sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, smr_pid, srcpath, targetpath, type, status, smr_img_type, edit_count_tail)
                                                   VALUES (CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', 'IMG', 'Pending', 4, '{3}')", smrProgramInfo.pid
                                                   , Util.escapedPath(smrProgramInfo.bannerimg)
                                                   , Util.escapedPath(smrProgramInfo.targetpath + Path.DirectorySeparatorChar + smrProgramInfo.pid + "_B" + edit_count_string + Path.GetExtension(smrProgramInfo.org_bannerimg.ToLower()))
                                                   , edit_count_string);
-                cmd = new MySqlCommand(m_sql, connPool.getConnection());
+                cmd = new MySqlCommand(_sql, connPool.getConnection());
                 cmd.ExecuteNonQuery();
             }
 
@@ -836,12 +836,12 @@ namespace MBCPLUS_DAEMON
                 {
                     edit_count_string = String.Format("_{0}", (smrProgramInfo.edit_img_thumb_count - 1).ToString("D2"));
                 }
-                m_sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, smr_pid, srcpath, targetpath, type, status, smr_img_type, edit_count_tail)
+                _sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, smr_pid, srcpath, targetpath, type, status, smr_img_type, edit_count_tail)
                                                   VALUES (CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', 'IMG', 'Pending', 5, '{3}')", smrProgramInfo.pid
                                                   , Util.escapedPath(smrProgramInfo.thumbimg)
                                                   , Util.escapedPath(smrProgramInfo.targetpath + Path.DirectorySeparatorChar + smrProgramInfo.pid + "_T" + edit_count_string + Path.GetExtension(smrProgramInfo.org_thumbimg.ToLower()))
                                                   , edit_count_string);
-                cmd = new MySqlCommand(m_sql, connPool.getConnection());
+                cmd = new MySqlCommand(_sql, connPool.getConnection());
                 cmd.ExecuteNonQuery();
             }
 
@@ -851,7 +851,7 @@ namespace MBCPLUS_DAEMON
 
         public bool GetArchiveClipService(DataSet ds)
         {            
-            m_sql = String.Format(@"SELECT
+            _sql = String.Format(@"SELECT
                                     C.clip_pk
                                     , C.imgsrcpath
                                     , C.clipsrcpath
@@ -902,7 +902,7 @@ namespace MBCPLUS_DAEMON
                                     ");
             connPool.ConnectionOpen();
             //MySqlTransaction trans = connPool.getConnection().BeginTransaction();
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "ARCHIVE");
             //trans.Commit();
             connPool.ConnectionClose();
@@ -914,9 +914,9 @@ namespace MBCPLUS_DAEMON
             DataSet ds = new DataSet();
             //vo.YtItems ytItems = new vo.YtItems();
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"SELECT YI.type as type, YI.org_name as org_name, YI.upload_path as upload_path, YI.language as language FROM TB_YT_ITEMS YI WHERE cid = '{0}' ", cid);
+            _sql = String.Format(@"SELECT YI.type as type, YI.org_name as org_name, YI.upload_path as upload_path, YI.language as language FROM TB_YT_ITEMS YI WHERE cid = '{0}' ", cid);
                 
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "GET_YT_ITEMS");
             connPool.ConnectionClose();
 
@@ -927,7 +927,7 @@ namespace MBCPLUS_DAEMON
         {
             DataSet ds = new DataSet();
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"SELECT
+            _sql = String.Format(@"SELECT
                                      cid, typeid, pooq_itemid                                     
                                      FROM TB_CLIP_INFO
                                      WHERE 1=1
@@ -935,7 +935,7 @@ namespace MBCPLUS_DAEMON
                                      AND (typeid = 2 OR typeid = 3)
                                      AND pooq_itemid = 0
                                      AND url is NOT NULL", cid);
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "CHECK_IDOL");
             connPool.ConnectionClose();
             logger.logging("idol check : " + ds.Tables[0].Rows.Count.ToString());
@@ -951,11 +951,11 @@ namespace MBCPLUS_DAEMON
         {
             DataSet ds = new DataSet();
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"SELECT targetpath FROM TB_ARCHIVE WHERE cid = '{0}'
+            _sql = String.Format(@"SELECT targetpath FROM TB_ARCHIVE WHERE cid = '{0}'
                                     AND STATUS = 'Completed'
                                     AND TYPE = 'MOV'
                                     LIMIT 0,1", cid);
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "CHECK_URL");
             connPool.ConnectionClose();
 
@@ -970,7 +970,7 @@ namespace MBCPLUS_DAEMON
                 ftptargetpath = ftptargetpath.Replace(@"Z:\", "");
                 ftptargetpath = ftptargetpath.Replace(@"\", "/");                
                 connPool.ConnectionOpen();
-                m_sql = String.Format(@"INSERT INTO TB_FTP_QUEUE (starttime, clip_pk, srcpath, targetfilename, status, type, customer_id, targetpath, gid, cid)
+                _sql = String.Format(@"INSERT INTO TB_FTP_QUEUE (starttime, clip_pk, srcpath, targetfilename, status, type, customer_id, targetpath, gid, cid)
                                                 VALUES( CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', 'Pending', '{3}', '{4}', '{5}', '{6}', '{7}')", pk
                                                                                                                         , Util.escapedPath(srcPath)
                                                                                                                         , System.IO.Path.GetFileName(srcPath)
@@ -979,7 +979,7 @@ namespace MBCPLUS_DAEMON
                                                                                                                         , ftptargetpath
                                                                                                                         , gid
                                                                                                                         , cid);
-                cmd = new MySqlCommand(m_sql, connPool.getConnection());
+                cmd = new MySqlCommand(_sql, connPool.getConnection());
                 cmd.ExecuteNonQuery();
                 connPool.ConnectionClose();                
                 
@@ -1006,7 +1006,7 @@ namespace MBCPLUS_DAEMON
             srcPath = srcPath.Replace("/", @"\");
             
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"INSERT INTO TB_FTP_QUEUE (starttime, clip_pk, srcpath, targetfilename, status, type, customer_id, targetpath, gid, cid)
+            _sql = String.Format(@"INSERT INTO TB_FTP_QUEUE (starttime, clip_pk, srcpath, targetfilename, status, type, customer_id, targetpath, gid, cid)
                                             VALUES( CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', 'Pending', '{3}', '{4}', '{5}', '{6}', '{7}')", clipInfo.clip_pk
                                                                                                                     , Util.escapedPath(srcPath)
                                                                                                                     , System.IO.Path.GetFileName(srcPath)
@@ -1016,7 +1016,7 @@ namespace MBCPLUS_DAEMON
                                                                                                                     , clipInfo.gid
                                                                                                                     , clipInfo.cid);
             //logger.logging(m_sql);
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -1040,7 +1040,7 @@ namespace MBCPLUS_DAEMON
                 logger.logging(String.Format("srcpath : {0}, targetPath : {1}, targetfileName : {2}", srcPath, targetPath, targetfileName));
 
                 connPool.ConnectionOpen();
-                m_sql = String.Format(@"INSERT INTO TB_FTP_QUEUE (starttime, srcpath, targetfilename, status, type, customer_id, targetpath, cid, gid, clip_pk)
+                _sql = String.Format(@"INSERT INTO TB_FTP_QUEUE (starttime, srcpath, targetfilename, status, type, customer_id, targetpath, cid, gid, clip_pk)
                                         VALUES( CURRENT_TIMESTAMP(), {0}, '{1}', 'Pending', '{2}', '{3}', '{4}', '{5}', '{6}', '{7}')"
                                         /*0 srcpath*/, "@srcPath"
                                         /*1 targetfilename*/, targetfileName
@@ -1050,7 +1050,7 @@ namespace MBCPLUS_DAEMON
                                         /*5 cid*/, youtubeContentInfo.cid
                                         /*6 gid*/, youtubeContentInfo.gid
                                         /*7 clip_pk*/, youtubeContentInfo.clip_pk);
-                cmd = new MySqlCommand(m_sql, connPool.getConnection());
+                cmd = new MySqlCommand(_sql, connPool.getConnection());
                 cmd.Parameters.Add(new MySqlParameter("@srcPath", srcPath));
                 cmd.ExecuteNonQuery();
                 connPool.ConnectionClose();
@@ -1073,7 +1073,7 @@ namespace MBCPLUS_DAEMON
                 logger.logging(String.Format("srcpath : {0}, targetPath : {1}, targetfileName : {2}", srcPath, targetPath, targetfileName));
 
                 connPool.ConnectionOpen();
-                m_sql = String.Format(@"INSERT INTO TB_FTP_QUEUE (starttime, srcpath, targetfilename, status, type, customer_id, targetpath, cid, gid, clip_pk)
+                _sql = String.Format(@"INSERT INTO TB_FTP_QUEUE (starttime, srcpath, targetfilename, status, type, customer_id, targetpath, cid, gid, clip_pk)
                                         VALUES( CURRENT_TIMESTAMP(), {0}, '{1}', 'Pending', '{2}', '{3}', '{4}', '{5}', '{6}', '{7}')"
                                         /*0 srcpath*/, "@srcPath"
                                         /*1 targetfilename*/, targetfileName
@@ -1083,7 +1083,7 @@ namespace MBCPLUS_DAEMON
                                         /*5 cid*/, youtubeContentInfo.cid
                                         /*6 gid*/, youtubeContentInfo.gid
                                         /*7 clip_pk*/, youtubeContentInfo.clip_pk);
-                cmd = new MySqlCommand(m_sql, connPool.getConnection());
+                cmd = new MySqlCommand(_sql, connPool.getConnection());
                 cmd.Parameters.Add(new MySqlParameter("@srcPath", srcPath));
                 cmd.ExecuteNonQuery();
                 connPool.ConnectionClose();
@@ -1109,7 +1109,7 @@ namespace MBCPLUS_DAEMON
                 logger.logging(String.Format("srcpath : {0}, targetPath : {1}, targetfileName : {2}", srcPath, targetPath, targetfileName));
 
                 connPool.ConnectionOpen();
-                m_sql = String.Format(@"INSERT INTO TB_FTP_QUEUE (starttime, srcpath, targetfilename, status, type, customer_id, targetpath, cid)
+                _sql = String.Format(@"INSERT INTO TB_FTP_QUEUE (starttime, srcpath, targetfilename, status, type, customer_id, targetpath, cid)
                                         VALUES( CURRENT_TIMESTAMP(), {0}, '{1}', 'Pending', '{2}', '{3}', '{4}', '{5}')"
                                         /*0 srcpath*/, "@srcPath"
                                         /*1 targetfilename*/, targetfileName
@@ -1117,7 +1117,7 @@ namespace MBCPLUS_DAEMON
                                         /*3 customer_id*/, dailymotionContentInfo.customerId
                                         /*4 targetpath*/, targetPath
                                         /*5*/, dailymotionContentInfo.cid);
-                cmd = new MySqlCommand(m_sql, connPool.getConnection());
+                cmd = new MySqlCommand(_sql, connPool.getConnection());
                 cmd.Parameters.Add(new MySqlParameter("@srcPath", srcPath));
                 cmd.ExecuteNonQuery();
                 connPool.ConnectionClose();
@@ -1145,7 +1145,7 @@ namespace MBCPLUS_DAEMON
                 logger.logging(String.Format("srcpath : {0}, targetPath : {1}, targetfileName : {2}", srcPath, targetPath, targetfileName));
 
                 connPool.ConnectionOpen();
-                m_sql = String.Format(@"INSERT INTO TB_FTP_QUEUE (starttime, srcpath, targetfilename, status, type, customer_id, targetpath, cid)
+                _sql = String.Format(@"INSERT INTO TB_FTP_QUEUE (starttime, srcpath, targetfilename, status, type, customer_id, targetpath, cid)
                                         VALUES( CURRENT_TIMESTAMP(), {0}, '{1}', 'Pending', '{2}', '{3}', '{4}', '{5}')"
                                         /*0 srcpath*/, "@srcPath"
                                         /*1 targetfilename*/, targetfileName
@@ -1153,7 +1153,7 @@ namespace MBCPLUS_DAEMON
                                         /*3 customer_id*/, dailymotionContentInfo.customerId
                                         /*4 targetpath*/, targetPath
                                         /*5*/, dailymotionContentInfo.cid);
-                cmd = new MySqlCommand(m_sql, connPool.getConnection());
+                cmd = new MySqlCommand(_sql, connPool.getConnection());
                 cmd.Parameters.Add(new MySqlParameter("@srcPath", srcPath));
                 cmd.ExecuteNonQuery();
                 connPool.ConnectionClose();
@@ -1164,7 +1164,7 @@ namespace MBCPLUS_DAEMON
         public bool GetFtpInfo(DataSet ds, String tail)
         {
             connPool.ConnectionOpen();            
-            m_sql = String.Format(@"SELECT ftp_queue_pk as pk
+            _sql = String.Format(@"SELECT ftp_queue_pk as pk
 	                                , IFNULL(FQ.srcpath, '') as srcpath
 	                                , IFNULL(FQ.targetpath, '') as targetpath
 	                                , IFNULL(FQ.targetfilename, '') as targetfilename
@@ -1348,7 +1348,7 @@ namespace MBCPLUS_DAEMON
                                     ", tail);
             //logger.logging(m_sql);
             //MySqlTransaction trans = connPool.getConnection().BeginTransaction();
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "FTP");
             //trans.Commit();
             connPool.ConnectionClose();
@@ -1356,11 +1356,11 @@ namespace MBCPLUS_DAEMON
             if (ds.Tables[0].Rows.Count > 0)
             {
                 String pk = ds.Tables[0].Rows[0]["pk"].ToString();
-                m_sql = String.Format(@"UPDATE TB_FTP_QUEUE SET starttime = CURRENT_TIMESTAMP(), status = 'Running' WHERE ftp_queue_pk = '{0}'", pk);
+                _sql = String.Format(@"UPDATE TB_FTP_QUEUE SET starttime = CURRENT_TIMESTAMP(), status = 'Running' WHERE ftp_queue_pk = '{0}'", pk);
                 connPool.ConnectionOpen();
 
                 //Running 으로 변경
-                cmd = new MySqlCommand(m_sql, connPool.getConnection());
+                cmd = new MySqlCommand(_sql, connPool.getConnection());
                 cmd.ExecuteNonQuery();
                 connPool.ConnectionClose();
                 logger.logging(String.Format(@"[FTPService] ftp_pk({0}) is Running", pk));
@@ -1372,7 +1372,7 @@ namespace MBCPLUS_DAEMON
         public bool GetCopyPrgramSeqInfo(DataSet ds)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"SELECT
+            _sql = String.Format(@"SELECT
                                      A.archive_pk
                                      , IFNULL(A.edit_count_tail, '') as edit_count_tail
                                      , PS.program_seq_pk AS program_seq_pk
@@ -1386,7 +1386,7 @@ namespace MBCPLUS_DAEMON
                                      AND A.status = 'Pending'
                                     LIMIT 0,1");
             //MySqlTransaction trans = connPool.getConnection().BeginTransaction();
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "COPY_PROGRAM_SEQ");
             //trans.Commit();
             connPool.ConnectionClose();
@@ -1396,7 +1396,7 @@ namespace MBCPLUS_DAEMON
         public bool GetCopyProgramService(DataSet ds)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"
+            _sql = String.Format(@"
                 SELECT
                  archive_pk as pk
                  , IFNULL(A.edit_count_tail, '') as edit_count_tail
@@ -1412,7 +1412,7 @@ namespace MBCPLUS_DAEMON
                  AND A.status = 'Pending'
                 LIMIT 0,1");
             //MySqlTransaction trans = connPool.getConnection().BeginTransaction();
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "COPY_PROGRAM");
             //trans.Commit();
             connPool.ConnectionClose();
@@ -1422,7 +1422,7 @@ namespace MBCPLUS_DAEMON
         public bool GetCopySmrProgramService(DataSet ds)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"
+            _sql = String.Format(@"
                 SELECT
                  archive_pk as pk
                  , IFNULL(A.edit_count_tail, '') as edit_count_tail
@@ -1438,7 +1438,7 @@ namespace MBCPLUS_DAEMON
                  AND A.status = 'Pending'
                 LIMIT 0,1");
             //MySqlTransaction trans = connPool.getConnection().BeginTransaction();
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "COPY_SMR_PROGRAM");
             //trans.Commit();
             connPool.ConnectionClose();
@@ -1447,7 +1447,7 @@ namespace MBCPLUS_DAEMON
 
         public bool GetClipService(DataSet ds)
         {
-            m_sql = String.Format(@"SELECT
+            _sql = String.Format(@"SELECT
                                 PS.contentid AS s_contentid
                                 , PS.cornerid AS s_cornerid                            
                                 , DATE_FORMAT(PS.phun_onair_ymd, '%Y%m%d') AS s_phun_onair_ymd
@@ -1545,7 +1545,7 @@ namespace MBCPLUS_DAEMON
                                 LIMIT 0,1");
             connPool.ConnectionOpen();
             //MySqlTransaction trans = connPool.getConnection().BeginTransaction();
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "CLIP");
             //trans.Commit();
             connPool.ConnectionClose();
@@ -1554,7 +1554,7 @@ namespace MBCPLUS_DAEMON
 
         public bool GetCopyClipService(DataSet ds)
         {            
-            m_sql = String.Format(@"
+            _sql = String.Format(@"
                         SELECT
                          A.archive_pk
                          , IFNULL(A.edit_count_tail, '') as edit_count_tail
@@ -1580,7 +1580,7 @@ namespace MBCPLUS_DAEMON
                          LIMIT 0,1");
             connPool.ConnectionOpen();
             //MySqlTransaction trans = connPool.getConnection().BeginTransaction();
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "COPY");
             //trans.Commit();                
             connPool.ConnectionClose();
@@ -1589,7 +1589,7 @@ namespace MBCPLUS_DAEMON
 
         public bool GetProgramSeqService(DataSet ds)
         {            
-            m_sql = String.Format(@"SELECT
+            _sql = String.Format(@"SELECT
                                 program_seq_pk
                                 , DATE_FORMAT(onair_date, '%Y%m%d') AS onair_date
                                 , DATE_FORMAT(edit_date, '%Y%m%d') as edit_date
@@ -1629,7 +1629,7 @@ namespace MBCPLUS_DAEMON
                                 LIMIT 0,1");
             connPool.ConnectionOpen();
             //MySqlTransaction trans = connPool.getConnection().BeginTransaction();
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "PROGRAM_SEQ");
             //trans.Commit();
             connPool.ConnectionClose();
@@ -1638,10 +1638,10 @@ namespace MBCPLUS_DAEMON
 
         public bool UpdateArchiveServiceRunning(String gid)
         {            
-            m_sql = String.Format("UPDATE TB_PROGRAM_SEQ SET starttime = CURRENT_TIMESTAMP(), status = 'Archive' WHERE gid = '{0}'", gid);
+            _sql = String.Format("UPDATE TB_PROGRAM_SEQ SET starttime = CURRENT_TIMESTAMP(), status = 'Archive' WHERE gid = '{0}'", gid);
             connPool.ConnectionOpen();
             //Running 으로 변경
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -1650,10 +1650,10 @@ namespace MBCPLUS_DAEMON
         public bool UpdateProgramSeqStatus(String gid, String status)
         {
             
-            m_sql = String.Format("UPDATE TB_PROGRAM_SEQ SET status = '{1}' WHERE gid = '{0}'", gid, status);            
+            _sql = String.Format("UPDATE TB_PROGRAM_SEQ SET status = '{1}' WHERE gid = '{0}'", gid, status);            
 
             connPool.ConnectionOpen();
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -1663,14 +1663,14 @@ namespace MBCPLUS_DAEMON
         {
             if ( status.ToLower() == "failed")
             {
-                m_sql = String.Format("UPDATE TB_PROGRAM_SEQ SET status = '{1}', errmsg = '{2}' WHERE gid = '{0}'", gid, status, errmsg);
+                _sql = String.Format("UPDATE TB_PROGRAM_SEQ SET status = '{1}', errmsg = '{2}' WHERE gid = '{0}'", gid, status, errmsg);
             } else
             {
-                m_sql = String.Format("UPDATE TB_PROGRAM_SEQ SET status = '{1}' WHERE gid = '{0}'", gid, status);
+                _sql = String.Format("UPDATE TB_PROGRAM_SEQ SET status = '{1}' WHERE gid = '{0}'", gid, status);
             }
 
             connPool.ConnectionOpen();
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;                    
@@ -1679,7 +1679,7 @@ namespace MBCPLUS_DAEMON
         public bool UpdateFromYtMeta(YTMetaInfo ytMetaInfo)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"UPDATE TB_YOUTUBE
+            _sql = String.Format(@"UPDATE TB_YOUTUBE
                                 SET title = {0}
                                 , description = {1}
                                 , tag = {2}
@@ -1704,7 +1704,7 @@ namespace MBCPLUS_DAEMON
                                 , "@trans_lang_desc"
                                 , ytMetaInfo.start_time
                                 , ytMetaInfo.videoid);            
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.Parameters.Add(new MySqlParameter("@title", ytMetaInfo.title));
             cmd.Parameters.Add(new MySqlParameter("@tag", ytMetaInfo.tag));
             cmd.Parameters.Add(new MySqlParameter("@description", ytMetaInfo.description));
@@ -1719,9 +1719,9 @@ namespace MBCPLUS_DAEMON
         public bool UpdateYoutubeReady(String cid)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format("UPDATE TB_YOUTUBE SET status = 'Ready' WHERE cid = '{0}'", cid);
+            _sql = String.Format("UPDATE TB_YOUTUBE SET status = 'Ready' WHERE cid = '{0}'", cid);
             //Running 으로 변경
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -1730,9 +1730,9 @@ namespace MBCPLUS_DAEMON
         public bool UpdateYoutubeSessionID(String cid, String sessionID)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format("UPDATE TB_YOUTUBE SET session_id = '{1}' WHERE cid = '{0}'", cid, sessionID);
+            _sql = String.Format("UPDATE TB_YOUTUBE SET session_id = '{1}' WHERE cid = '{0}'", cid, sessionID);
             //Running 으로 변경
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -1741,9 +1741,9 @@ namespace MBCPLUS_DAEMON
         public bool UpdateYoutubeVideoIDToNULL(String videoid)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format("UPDATE TB_YOUTUBE SET videoid = NULL WHERE videoid = '{0}'", videoid);
+            _sql = String.Format("UPDATE TB_YOUTUBE SET videoid = NULL WHERE videoid = '{0}'", videoid);
             //Running 으로 변경
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -1754,8 +1754,8 @@ namespace MBCPLUS_DAEMON
             DataSet ds = new DataSet();
             String session_id = null;
             connPool.ConnectionOpen();
-            m_sql = String.Format("SELECT session_id FROM TB_YOUTUBE WHERE cid = '{0}'", cid);
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            _sql = String.Format("SELECT session_id FROM TB_YOUTUBE WHERE cid = '{0}'", cid);
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "GET_SID");
             connPool.ConnectionClose();
 
@@ -1772,8 +1772,8 @@ namespace MBCPLUS_DAEMON
             DataSet ds = new DataSet();
             String thumbnail_img = null;
             connPool.ConnectionOpen();
-            m_sql = String.Format("SELECT cdnurl_img FROM TB_CLIP WHERE cid = '{0}'", cid);
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            _sql = String.Format("SELECT cdnurl_img FROM TB_CLIP WHERE cid = '{0}'", cid);
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "GET_CLIP_IMG");
             connPool.ConnectionClose();
             try
@@ -1793,8 +1793,8 @@ namespace MBCPLUS_DAEMON
             DataSet ds = new DataSet();
             String thumbnail_caption = null;
             connPool.ConnectionOpen();
-            m_sql = String.Format("SELECT cdnurl_subtitle FROM TB_CLIP WHERE cid = '{0}'", cid);
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            _sql = String.Format("SELECT cdnurl_subtitle FROM TB_CLIP WHERE cid = '{0}'", cid);
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "GET_CLIP_CAPTION");
             connPool.ConnectionClose();
             try
@@ -1811,9 +1811,9 @@ namespace MBCPLUS_DAEMON
         public bool UpdateDailymotionReady(String cid)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format("UPDATE TB_DAILYMOTION SET status = 'Ready' WHERE cid = '{0}'", cid);
+            _sql = String.Format("UPDATE TB_DAILYMOTION SET status = 'Ready' WHERE cid = '{0}'", cid);
             //Running 으로 변경
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -1821,9 +1821,9 @@ namespace MBCPLUS_DAEMON
 
         public bool UpdateSendingProgress(String pk, double percent )
         {
-            m_sql = String.Format(@"UPDATE TB_FTP_QUEUE SET percent = '{0}' WHERE ftp_queue_pk = '{1}'", percent, pk);
+            _sql = String.Format(@"UPDATE TB_FTP_QUEUE SET percent = '{0}' WHERE ftp_queue_pk = '{1}'", percent, pk);
             connPool.ConnectionOpen();
-            MySqlCommand cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            MySqlCommand cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -1832,9 +1832,9 @@ namespace MBCPLUS_DAEMON
         public bool UpdateArchiveProgramServiceRunning(String pid)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format("UPDATE TB_PROGRAM SET job_starttime = CURRENT_TIMESTAMP(), status = 'Archive' WHERE pid = '{0}'", pid);
+            _sql = String.Format("UPDATE TB_PROGRAM SET job_starttime = CURRENT_TIMESTAMP(), status = 'Archive' WHERE pid = '{0}'", pid);
             //Running 으로 변경
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -1843,9 +1843,9 @@ namespace MBCPLUS_DAEMON
         public bool SetArchiveSmrProgramServiceRunning(String pid)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format("UPDATE TB_SMR_PROGRAM SET edit_time = CURRENT_TIMESTAMP(), status = 'Archive' WHERE pid = '{0}'", pid);
+            _sql = String.Format("UPDATE TB_SMR_PROGRAM SET edit_time = CURRENT_TIMESTAMP(), status = 'Archive' WHERE pid = '{0}'", pid);
             //Running 으로 변경
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -1853,10 +1853,10 @@ namespace MBCPLUS_DAEMON
 
         public bool UpdateFtpCompleted(String pk)
         {
-            m_sql = String.Format("UPDATE TB_FTP_QUEUE SET endtime = CURRENT_TIMESTAMP(), status = 'Completed', percent = 100 WHERE ftp_queue_pk = '{0}'", pk);
+            _sql = String.Format("UPDATE TB_FTP_QUEUE SET endtime = CURRENT_TIMESTAMP(), status = 'Completed', percent = 100 WHERE ftp_queue_pk = '{0}'", pk);
 
             connPool.ConnectionOpen();
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -1879,15 +1879,15 @@ namespace MBCPLUS_DAEMON
         {
             if (status.ToLower() == "failed" || status.ToLower() == "completed")
             {
-                m_sql = String.Format("UPDATE TB_FTP_QUEUE SET endtime = CURRENT_TIMESTAMP(), status = '{1}', endtime = CURRENT_TIMESTAMP() WHERE ftp_queue_pk = '{0}'", pk, status);
+                _sql = String.Format("UPDATE TB_FTP_QUEUE SET endtime = CURRENT_TIMESTAMP(), status = '{1}', endtime = CURRENT_TIMESTAMP() WHERE ftp_queue_pk = '{0}'", pk, status);
             }
             else
             {
-                m_sql = String.Format("UPDATE TB_FTP_QUEUE SET endtime = CURRENT_TIMESTAMP(), status = '{1}', WHERE ftp_queue_pk = '{0}'", pk, status);
+                _sql = String.Format("UPDATE TB_FTP_QUEUE SET endtime = CURRENT_TIMESTAMP(), status = '{1}', WHERE ftp_queue_pk = '{0}'", pk, status);
             }            
 
             connPool.ConnectionOpen();
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -1897,14 +1897,14 @@ namespace MBCPLUS_DAEMON
         {
             if ( status.ToLower() == "failed")
             {
-                m_sql = String.Format("UPDATE TB_FTP_QUEUE SET endtime = CURRENT_TIMESTAMP(), status = '{1}', errmsg = '{2}', endtime = CURRENT_TIMESTAMP() WHERE ftp_queue_pk = '{0}'", pk, status, errmsg);
+                _sql = String.Format("UPDATE TB_FTP_QUEUE SET endtime = CURRENT_TIMESTAMP(), status = '{1}', errmsg = '{2}', endtime = CURRENT_TIMESTAMP() WHERE ftp_queue_pk = '{0}'", pk, status, errmsg);
             } else
             {
-                m_sql = String.Format("UPDATE TB_FTP_QUEUE SET endtime = CURRENT_TIMESTAMP(), status = '{1}', errmsg = '{2}' WHERE ftp_queue_pk = '{0}'", pk, status, errmsg);
+                _sql = String.Format("UPDATE TB_FTP_QUEUE SET endtime = CURRENT_TIMESTAMP(), status = '{1}', errmsg = '{2}' WHERE ftp_queue_pk = '{0}'", pk, status, errmsg);
             }            
 
             connPool.ConnectionOpen();
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -1912,9 +1912,9 @@ namespace MBCPLUS_DAEMON
 
         public bool UpdateDMVideoid(String cid, String videoid)
         {
-            m_sql = String.Format("UPDATE TB_DAILYMOTION SET videoid = '{0}' WHERE cid = '{1}'", videoid, cid);
+            _sql = String.Format("UPDATE TB_DAILYMOTION SET videoid = '{0}' WHERE cid = '{1}'", videoid, cid);
             connPool.ConnectionOpen();
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -1922,10 +1922,10 @@ namespace MBCPLUS_DAEMON
 
         public bool InsertDMChannelList(DMChannelList dmList)
         {
-            m_sql = String.Format(@"INSERT INTO TB_DM_CHANNELLIST (id, name, description) VALUES('{0}','{1}','{2}')
+            _sql = String.Format(@"INSERT INTO TB_DM_CHANNELLIST (id, name, description) VALUES('{0}','{1}','{2}')
                                     ON DUPLICATE KEY UPDATE id = '{0}', name = '{1}', description = '{2}'", dmList.id, dmList.name, dmList.description);
             connPool.ConnectionOpen();
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -1958,10 +1958,10 @@ namespace MBCPLUS_DAEMON
                 target_field = "cdn_logo_img";
             }
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"UPDATE TB_PROGRAM
+            _sql = String.Format(@"UPDATE TB_PROGRAM
                                     SET {2} = '{0}', status = 'Completed'
                                     WHERE pid = '{1}'", full_url, pid, target_field);
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -1991,10 +1991,10 @@ namespace MBCPLUS_DAEMON
                 target_field = "cdn_thumbimg";
             }
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"UPDATE TB_SMR_PROGRAM
+            _sql = String.Format(@"UPDATE TB_SMR_PROGRAM
                                     SET {2} = '{0}', status = 'Completed'
                                     WHERE pid = '{1}'", full_url, pid, target_field);
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -2016,10 +2016,10 @@ namespace MBCPLUS_DAEMON
                 target_field = "cdnurl_script";
             }
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"UPDATE TB_PROGRAM_SEQ
+            _sql = String.Format(@"UPDATE TB_PROGRAM_SEQ
                                     SET {2} = '{0}'
                                     WHERE gid = '{1}'", full_url, gid, target_field);
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -2027,9 +2027,9 @@ namespace MBCPLUS_DAEMON
 
         public bool UpdateContentBypass(String pk)
         {
-            m_sql = String.Format(@"UPDATE TB_FTP_QUEUE SET starttime = CURRENT_TIMESTAMP(), endtime = CURRENT_TIMESTAMP(), status = 'Bypass' WHERE ftp_queue_pk = '{0}'", pk);
+            _sql = String.Format(@"UPDATE TB_FTP_QUEUE SET starttime = CURRENT_TIMESTAMP(), endtime = CURRENT_TIMESTAMP(), status = 'Bypass' WHERE ftp_queue_pk = '{0}'", pk);
             connPool.ConnectionOpen();
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -2037,9 +2037,9 @@ namespace MBCPLUS_DAEMON
 
         public bool UpdateAliasFilepath(String pk, String filepath, String filename)
         {
-            m_sql = String.Format("UPDATE TB_FTP_QUEUE SET targetpath = '{1}', targetfilename = '{2}' WHERE ftp_queue_pk = '{0}'", pk, filepath, filename);
+            _sql = String.Format("UPDATE TB_FTP_QUEUE SET targetpath = '{1}', targetfilename = '{2}' WHERE ftp_queue_pk = '{0}'", pk, filepath, filename);
             connPool.ConnectionOpen();
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -2047,9 +2047,9 @@ namespace MBCPLUS_DAEMON
 
         public bool UpdateFTPFilepath(String pk, String filepath, String filename)
         {
-            m_sql = String.Format("UPDATE TB_FTP_QUEUE SET targetpath = '{1}', targetfilename = '{2}' WHERE ftp_queue_pk = '{0}'", pk, filepath, filename);
+            _sql = String.Format("UPDATE TB_FTP_QUEUE SET targetpath = '{1}', targetfilename = '{2}' WHERE ftp_queue_pk = '{0}'", pk, filepath, filename);
             connPool.ConnectionOpen();
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -2058,14 +2058,14 @@ namespace MBCPLUS_DAEMON
         public bool UpdateCallbackURL(String pk, String full_url, String rtmp_url, String hls_url)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"UPDATE TB_CALLBACK SET endtime = CURRENT_TIMESTAMP()
+            _sql = String.Format(@"UPDATE TB_CALLBACK SET endtime = CURRENT_TIMESTAMP()
                                 , status = 'Completed'
                                 , download_url = '{1}'
                                 , rtmp_url = '{2}'
                                 , hls_url = '{3}'
                                 WHERE callback_pk = '{0}'", pk, full_url, rtmp_url, hls_url);
             //Completed 로 변경
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -2073,9 +2073,9 @@ namespace MBCPLUS_DAEMON
 
         public bool UpdateTranscodePK(String tc_pk, String ftp_pk)
         {
-            m_sql = String.Format("UPDATE TB_FTP_QUEUE SET tc_pk = '{0}' WHERE ftp_queue_pk = '{1}'", tc_pk, ftp_pk);
+            _sql = String.Format("UPDATE TB_FTP_QUEUE SET tc_pk = '{0}' WHERE ftp_queue_pk = '{1}'", tc_pk, ftp_pk);
             connPool.ConnectionOpen();
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -2096,10 +2096,10 @@ namespace MBCPLUS_DAEMON
         public bool UpdateClipStatus(String cid, String status)
         {            
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"UPDATE TB_CLIP
+            _sql = String.Format(@"UPDATE TB_CLIP
                             SET status = '{1}'
                             WHERE cid = '{0}'", cid, status);
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             logger.logging(String.Format("({0}) clip Status {1}", cid, status));                
@@ -2110,10 +2110,10 @@ namespace MBCPLUS_DAEMON
         public bool UpdateYoutubeStatus(String cid, String status)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"UPDATE TB_YOUTUBE
+            _sql = String.Format(@"UPDATE TB_YOUTUBE
                             SET status = '{1}'
                             WHERE cid = '{0}'", cid, status);
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             logger.logging(String.Format("({0}) youtube Status {1}", cid, status));
@@ -2124,10 +2124,10 @@ namespace MBCPLUS_DAEMON
         public bool UpdateDailyMotionStatus(String cid, String status)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"UPDATE TB_DAILYMOTION
+            _sql = String.Format(@"UPDATE TB_DAILYMOTION
                             SET status = '{1}'
                             WHERE cid = '{0}'", cid, status);
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             logger.logging(String.Format("({0}) dailymotion Status {1}", cid, status));
@@ -2140,19 +2140,19 @@ namespace MBCPLUS_DAEMON
             if (status.ToLower() == "failed")
             {
 
-                m_sql = String.Format(@"UPDATE TB_CLIP
+                _sql = String.Format(@"UPDATE TB_CLIP
                             SET status = '{1}'
                             , errmsg = '{2}'
                             WHERE cid = '{0}'", cid, status, errmsg);
             } else
             {
-                m_sql = String.Format(@"UPDATE TB_CLIP
+                _sql = String.Format(@"UPDATE TB_CLIP
                             SET status = '{1}'                            
                             WHERE cid = '{0}'", cid, status);
             }
 
             connPool.ConnectionOpen();
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             logger.logging(String.Format("({0}) clip Status {1}", cid, status));
@@ -2163,7 +2163,7 @@ namespace MBCPLUS_DAEMON
         public bool UpdateClipInfos(String cid, MediaInfomation mediainfo)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"UPDATE TB_CLIP SET playtime = '{0}'
+            _sql = String.Format(@"UPDATE TB_CLIP SET playtime = '{0}'
                                                     , starttime = CURRENT_TIMESTAMP()
                                                     , v_bitrate = '{1}'
                                                     , v_codec = '{2}'
@@ -2192,7 +2192,7 @@ namespace MBCPLUS_DAEMON
                                                     , mediainfo.v_format
                                                     , mediainfo.v_version
                                                     , mediainfo.filesize);
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -2202,12 +2202,12 @@ namespace MBCPLUS_DAEMON
         {
             DataSet ds = new DataSet();
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"SELECT
+            _sql = String.Format(@"SELECT
                                      YT.status as status                                                                   
                                      FROM TB_YOUTUBE YT
                                      WHERE 1=1                                     
                                      AND YT.cid = '{0}'", cid);
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "YT_READY");
             connPool.ConnectionClose();
 
@@ -2229,10 +2229,10 @@ namespace MBCPLUS_DAEMON
         public bool UpdateYoutubeStatus(String cid, String status, YoutubeID ytID)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"UPDATE TB_YOUTUBE
+            _sql = String.Format(@"UPDATE TB_YOUTUBE
                                     SET status = '{0}', assetid = '{1}', videoid = '{2}', session_id = ''                                
                                     WHERE cid = '{3}'", status, ytID.AssetID, ytID.VideoID, cid);
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -2245,14 +2245,14 @@ namespace MBCPLUS_DAEMON
                 type = "subtitle";
             }
             type = type.ToLower();
-            m_sql = String.Format(@"UPDATE TB_CLIP
+            _sql = String.Format(@"UPDATE TB_CLIP
                                     SET cdnurl_{0} = '{1}'                                   
                                     WHERE clip_pk = '{2}'"
                                     , type
                                     , full_url
                                     , pk);
             connPool.ConnectionOpen();
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -2268,14 +2268,14 @@ namespace MBCPLUS_DAEMON
             {
                 type = "srt";
             }
-            m_sql = String.Format(@"UPDATE TB_YOUTUBE
+            _sql = String.Format(@"UPDATE TB_YOUTUBE
                                     SET cdn_{0} = '{1}'                                   
                                     WHERE cid = '{2}'"
                                     , type
                                     , full_url
                                     , cid);
             connPool.ConnectionOpen();
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -2283,7 +2283,7 @@ namespace MBCPLUS_DAEMON
 
         public bool Update_YT_ITEM_CDNURL(String full_url, String cid, String language)
         {            
-            m_sql = String.Format(@"UPDATE TB_YT_ITEMS
+            _sql = String.Format(@"UPDATE TB_YT_ITEMS
                                     SET cdn_path = '{0}'                                   
                                     WHERE cid = '{1}' AND language = '{2}'"                                
                                     , full_url
@@ -2291,7 +2291,7 @@ namespace MBCPLUS_DAEMON
                                     , language
                                     );
             connPool.ConnectionOpen();
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -2299,13 +2299,13 @@ namespace MBCPLUS_DAEMON
 
         public bool UpdateClipInfos(String full_url, String rtmp_url, String hls_url, String pk)
         {
-            m_sql = String.Format(@"UPDATE TB_CLIP
+            _sql = String.Format(@"UPDATE TB_CLIP
                                     SET cdnurl_mov = '{0}'
                                     , rtmp_url = '{1}'
                                     , hls_url = '{2}'                                    
                                     WHERE clip_pk = '{3}'", full_url, rtmp_url, hls_url, pk);
             connPool.ConnectionOpen();
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -2314,8 +2314,8 @@ namespace MBCPLUS_DAEMON
         public bool UpdateClipArchivePath(String path, String cid, String lang)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"UPDATE TB_YT_ITEMS SET archive_path = '{0}' WHERE cid = '{1}' AND language = '{2}'", path, cid, lang);
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            _sql = String.Format(@"UPDATE TB_YT_ITEMS SET archive_path = '{0}' WHERE cid = '{1}' AND language = '{2}'", path, cid, lang);
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -2325,13 +2325,13 @@ namespace MBCPLUS_DAEMON
         {
             DataSet ds = new DataSet();
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"SELECT
+            _sql = String.Format(@"SELECT
                                      C.cdnurl_img,
                                      C.cdnurl_mov                                     
                                      FROM TB_CLIP C
                                      WHERE 1=1                                     
                                      AND clip_pk = '{0}'", pk);            
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "CHECK_URL");            
             connPool.ConnectionClose();
 
@@ -2356,7 +2356,7 @@ namespace MBCPLUS_DAEMON
             DataSet ds = new DataSet();
             String status = null;            
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"SELECT
+            _sql = String.Format(@"SELECT
                                     status
                                     , targetfilename
                                     FROM TB_FTP_QUEUE
@@ -2367,7 +2367,7 @@ namespace MBCPLUS_DAEMON
                                     ORDER BY starttime DESC
                                     LIMIT 0,1
                                      ", cid);
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "CHECK_YT_IMG");
             connPool.ConnectionClose();            
 
@@ -2402,13 +2402,13 @@ namespace MBCPLUS_DAEMON
             targetFaileName = null;
             DataSet ds = new DataSet();            
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"SELECT
+            _sql = String.Format(@"SELECT
                                     {0}                                    
                                     FROM TB_CLIP
                                     WHERE 1=1
                                     AND cid = '{1}'
                                      ", type, cid);
-            MySqlDataAdapter adpt = new MySqlDataAdapter(m_sql, connPool.getConnection());
+            MySqlDataAdapter adpt = new MySqlDataAdapter(_sql, connPool.getConnection());
             adpt.Fill(ds, "CHECK_YT");
             connPool.ConnectionClose();
 
@@ -2430,9 +2430,9 @@ namespace MBCPLUS_DAEMON
         public bool DeleteEpgInfo(String day, String ch_no)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"DELETE FROM TB_EPG_INFO WHERE startymd = '{0}'
+            _sql = String.Format(@"DELETE FROM TB_EPG_INFO WHERE startymd = '{0}'
                                     AND ch_no = '{1}'", day, ch_no);
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -2441,7 +2441,7 @@ namespace MBCPLUS_DAEMON
         public bool InsertEpginfo(vo.EPGInfo epgInfo)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format(@"INSERT INTO TB_EPG_INFO(sid, mid, ch_no, ch_name, program_name, program_subname, startymd, starttime, endtime, frequency, hd_YN, grade, duration, suwna_YN)
+            _sql = String.Format(@"INSERT INTO TB_EPG_INFO(sid, mid, ch_no, ch_name, program_name, program_subname, startymd, starttime, endtime, frequency, hd_YN, grade, duration, suwna_YN)
                                                   VALUES ('{0}', '{1}', '{2}', '{3}', {4}, {5}, '{6}', '{7}', '{8}', '{9}', '{10}', '{11}', '{12}', '{13}' )
                                                   ON DUPLICATE KEY UPDATE program_name = {4}_u, program_subname = {5}_u, startymd = '{6}', starttime = '{7}', endtime = '{8}'", epgInfo.SID
                                                                                                                                    , epgInfo.MID
@@ -2457,7 +2457,7 @@ namespace MBCPLUS_DAEMON
                                                                                                                                    , epgInfo.Grade
                                                                                                                                    , epgInfo.Duration
                                                                                                                                    , epgInfo.Suwha);
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.Parameters.Add(new MySqlParameter("@program_name", epgInfo.ProgramName));
             cmd.Parameters.Add(new MySqlParameter("@program_subname", epgInfo.ProgramName));
             cmd.Parameters.Add(new MySqlParameter("@program_name_u", epgInfo.ProgramName));
@@ -2470,8 +2470,8 @@ namespace MBCPLUS_DAEMON
         public bool WriteLockTable(String tablename)
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format("LOCK TABLES {0} WRITE", tablename);            
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            _sql = String.Format("LOCK TABLES {0} WRITE", tablename);            
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
@@ -2480,8 +2480,8 @@ namespace MBCPLUS_DAEMON
         public bool UNLOCKTable()
         {
             connPool.ConnectionOpen();
-            m_sql = String.Format("UNLOCK TABLES");            
-            cmd = new MySqlCommand(m_sql, connPool.getConnection());
+            _sql = String.Format("UNLOCK TABLES");            
+            cmd = new MySqlCommand(_sql, connPool.getConnection());
             cmd.ExecuteNonQuery();
             connPool.ConnectionClose();
             return true;
