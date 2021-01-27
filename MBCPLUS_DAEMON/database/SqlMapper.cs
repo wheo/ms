@@ -470,7 +470,7 @@ namespace MBCPLUS_DAEMON
 
         public bool InsertCLIPINFO(String gid, String cid, String typeid, String hls_url)
         {
-            hls_url = hls_url.Replace("http://vod.", "http://idolvod.");
+            hls_url = hls_url.Replace("https://vod.", "https://idolvod.");
             hls_url = hls_url.Replace("mbcplusvod/_definst_", "idolvod/_definst_");
             hls_url = hls_url.Replace("mp4:mbcplus_mbcpvod", "mp4:mbcplus_mbcpidol");
             _sql = String.Format(@"INSERT INTO TB_CLIP_INFO(insert_time, edit_date, gid, cid, typeid, url, pooq_itemid)

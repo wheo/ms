@@ -212,9 +212,8 @@ namespace MBCPLUS_DAEMON
 
                                 using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
                                 {
-                                    conn.Open();
-
                                     //Completed 으로 변경
+                                    conn.Open();
                                     MySqlCommand cmd = new MySqlCommand(sql, conn);
                                     cmd.ExecuteNonQuery();
                                 }
@@ -224,9 +223,9 @@ namespace MBCPLUS_DAEMON
                             {
                                 using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
                                 {
+                                    //Failed로 변경
                                     conn.Open();
                                     string sql = String.Format("UPDATE TB_PROGRAM_SEQ SET endtime = CURRENT_TIMESTAMP(), status = 'Failed' WHERE program_seq_pk = '{0}'", m_pk);
-                                    //Failed로 변경
                                     MySqlCommand cmd = new MySqlCommand(sql, conn);
                                     cmd.ExecuteNonQuery();
                                 }

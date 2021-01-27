@@ -934,7 +934,6 @@ namespace MBCPLUS_DAEMON
                 }
                 Thread.Sleep(1000);
             }
-
             log.logging("Thread Terminate");
         }
     }
