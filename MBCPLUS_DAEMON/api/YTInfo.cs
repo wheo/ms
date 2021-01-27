@@ -300,9 +300,16 @@ namespace MBCPLUS_DAEMON
                     }
                 }
 
-                if (response.NextPageToken != null)
+                log.logging("next page token : " + response.NextPageToken);
+
+                if (!string.IsNullOrWhiteSpace(response.NextPageToken))
                 {
+                    log.logging(string.Format($"response pageinfo ({response.PageInfo.ResultsPerPage}/{response.PageInfo.TotalResults})"));
                     listRequest.PageToken = response.NextPageToken;
+                    if (response.Items.Count == response.PageInfo.TotalResults)
+                    {
+                        break;
+                    }
                 }
                 else if (response == null)
                 {
