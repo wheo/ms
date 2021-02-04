@@ -132,7 +132,7 @@ namespace MBCPLUS_DAEMON
                             clipInfo.orgsubtitlename = r["orgsubtitlename"].ToString();
                             clipInfo.gid = r["gid"].ToString();
                             clipInfo.cid = r["cid"].ToString();
-                            clipInfo.archive_date = r["archive_date"].ToString();
+                            //clipInfo.archive_date = r["archive_date"].ToString();
                             clipInfo.metahub_YN = r["metahub_YN"].ToString();
                             clipInfo.section = r["section"].ToString();
                             clipInfo.idolvod_YN = r["idolvod_YN"].ToString();
@@ -186,6 +186,8 @@ namespace MBCPLUS_DAEMON
                             //log.logging(String.Format(@"[ArchiveService] cid ({0}) is Archived", clipInfo.cid));
 
                             String targetPath = "";
+                            string dateFromCID = clipInfo.cid.Substring(2, 8);
+                            dateFromCID = string.Format($"{dateFromCID.Substring(0, 4)}\\{dateFromCID.Substring(4, 2)}\\{dateFromCID.Substring(6, 2)}");                                
 
                             StringBuilder sb = new StringBuilder();
                             if (Singleton.getInstance().Test)
@@ -196,7 +198,7 @@ namespace MBCPLUS_DAEMON
                             {
                                 sb.Append(Util.getSectionPath(clipInfo.section));
                             }
-                            sb.Append(clipInfo.archive_date);
+                            sb.Append(dateFromCID);
                             sb.Append(Path.DirectorySeparatorChar);
                             sb.Append(clipInfo.gid);
                             sb.Append(Path.DirectorySeparatorChar);

@@ -80,7 +80,7 @@ namespace MBCPLUS_DAEMON
                             programSeqInfo.org_script = r["org_script"].ToString();
                             programSeqInfo.gid = r["gid"].ToString();
                             programSeqInfo.cdn_img = r["cdnurl_img"].ToString();
-                            programSeqInfo.archive_date = r["archive_date"].ToString();                            
+                            //programSeqInfo.archive_date = r["archive_date"].ToString();                            
                             programSeqInfo.section = r["section"].ToString();
                             programSeqInfo.edit_img_count = Convert.ToInt32(r["edit_img_count"].ToString());
                             programSeqInfo.edit_cue_count = Convert.ToInt32(r["edit_cue_count"].ToString());
@@ -93,6 +93,9 @@ namespace MBCPLUS_DAEMON
                             frmMain.WriteLogThread(String.Format(@"gid({0}) is Archive", programSeqInfo.gid));
                             //String targetPath = "";
 
+                            string dateFromGID = programSeqInfo.gid.Substring(2, 8);
+                            dateFromGID = string.Format($"{dateFromGID.Substring(0, 4)}\\{dateFromGID.Substring(4, 2)}\\{dateFromGID.Substring(6, 2)}");
+
                             // 스포츠, 예능 구분해야함(프로그램 정보로부터 가져올 수 있음)
                             StringBuilder sb = new StringBuilder();
                             if (Singleton.getInstance().Test)
@@ -102,7 +105,7 @@ namespace MBCPLUS_DAEMON
                             {
                                 sb.Append(Util.getSectionPath(programSeqInfo.section));
                             }
-                            sb.Append(programSeqInfo.archive_date);
+                            sb.Append(dateFromGID);
                             sb.Append(Path.DirectorySeparatorChar);
                             sb.Append(programSeqInfo.gid);
 
