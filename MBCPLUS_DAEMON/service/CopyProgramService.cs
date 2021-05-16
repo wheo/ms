@@ -93,6 +93,10 @@ namespace MBCPLUS_DAEMON
                             CustomFileCopier copier = new CustomFileCopier(srcpath, dstpath);
                             copier.Copy();
 
+                            string dstpath_b = dstpath.Replace("Z:", "Y:");
+                            CustomFileCopier copier_b = new CustomFileCopier(srcpath, dstpath_b);
+                            copier_b.Copy();
+
                             //UpdateArchiveStatue 로 수정해야 함(리팩토링 2019-01-28 아직 안함)
                             //Completed 로 변경
                             using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
