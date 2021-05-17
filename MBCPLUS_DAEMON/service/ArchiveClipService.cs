@@ -132,6 +132,8 @@ namespace MBCPLUS_DAEMON
                             clipInfo.orgsubtitlename = r["orgsubtitlename"].ToString();
                             clipInfo.gid = r["gid"].ToString();
                             clipInfo.cid = r["cid"].ToString();
+                            //new
+                            clipInfo.broaddate = r["broaddate"].ToString();
                             //clipInfo.archive_date = r["archive_date"].ToString();
                             clipInfo.metahub_YN = r["metahub_YN"].ToString();
                             clipInfo.section = r["section"].ToString();
@@ -187,7 +189,7 @@ namespace MBCPLUS_DAEMON
 
                             String targetPath = "";
                             string dateFromCID = clipInfo.cid.Substring(2, 8);
-                            dateFromCID = string.Format($"{dateFromCID.Substring(0, 4)}\\{dateFromCID.Substring(4, 2)}\\{dateFromCID.Substring(6, 2)}");                                
+                            dateFromCID = string.Format($"{dateFromCID.Substring(0, 4)}\\{dateFromCID.Substring(4, 2)}\\{dateFromCID.Substring(6, 2)}");
 
                             StringBuilder sb = new StringBuilder();
                             if (Singleton.getInstance().Test)

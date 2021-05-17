@@ -112,7 +112,7 @@ namespace MBCPLUS_DAEMON
                                 CustomFileCopier copier = new CustomFileCopier(srcpath, dstpath);
                                 copier.Copy();
 
-                                string dstpath_b = dstpath.Replace("Z:", "Y:");
+                                string dstpath_b = dstpath.Replace("Z:", "W:");
                                 CustomFileCopier copier_b = new CustomFileCopier(srcpath, dstpath_b);
                                 copier_b.Copy();
 

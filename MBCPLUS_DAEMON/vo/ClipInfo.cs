@@ -29,6 +29,7 @@ namespace MBCPLUS_DAEMON
         public String gid { get; set; }
         public String cid { get; set; }
         //public String archive_date { get; set; }
+        public string broaddate { get; set; }
         public String section { get; set; }
         public String idolclip_YN { get; set; }
         public String idolvod_YN { get; set; }

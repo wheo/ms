@@ -498,6 +498,7 @@ namespace MBCPLUS_DAEMON
                                     , PS.org_script as org_script
                                     , PS.contentid
                                     , PS.gid
+                                    , DATE_FORMAT(PS.broaddate, '%Y\\%m\\%d') AS broaddate
                                     , DATE_FORMAT(PS.insert_time, '%Y\\%m\\%d') AS archive_date
                                     , PS.cdnurl_img
                                     , PS.status
@@ -968,6 +969,7 @@ namespace MBCPLUS_DAEMON
                                     , YT.cdn_img as yt_cdn_img
                                     , YT.cdn_srt as yt_cdn_srt
                                     , IFNULL(C.metahub_YN, 'Y') AS metahub_YN
+                                    , DATE_FORMAT(C.broaddate, '%Y\\%m\\%d') AS broaddate
                                     , (SELECT DATE_FORMAT(C.insert_time, '%Y\\%m\\%d') FROM TB_PROGRAM_SEQ PS WHERE PS.gid = C.gid ) AS archive_date
                                     , P.section AS section
                                     , C.status

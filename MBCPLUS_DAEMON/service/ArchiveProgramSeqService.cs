@@ -80,6 +80,7 @@ namespace MBCPLUS_DAEMON
                             programSeqInfo.org_script = r["org_script"].ToString();
                             programSeqInfo.gid = r["gid"].ToString();
                             programSeqInfo.cdn_img = r["cdnurl_img"].ToString();
+                            programSeqInfo.broaddate = r["broaddate"].ToString();
                             //programSeqInfo.archive_date = r["archive_date"].ToString();                            
                             programSeqInfo.section = r["section"].ToString();
                             programSeqInfo.edit_img_count = Convert.ToInt32(r["edit_img_count"].ToString());

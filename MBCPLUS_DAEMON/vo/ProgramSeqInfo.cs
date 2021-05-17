@@ -17,6 +17,8 @@ namespace MBCPLUS_DAEMON.vo
         public String src_script { get; set; }
         public String org_script { get; set; }
         public String cdn_img { get; set; }
+        //new
+        public string broaddate { get; set; }
         //public String archive_date { get; set; }
         public String section { get; set; }
         public String targetpath { get; set; }
