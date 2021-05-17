@@ -20,6 +20,18 @@ namespace MBCPLUS_DAEMON
             this.SourceFilePath = Source;
             this.DestFilePath = Dest;
 
+            try
+            {
+                if (!Directory.Exists(Path.GetDirectoryName(this.DestFilePath)))
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(this.DestFilePath));
+                }
+            }
+            catch (Exception e)
+            {
+                frmMain.WriteLogThread(e.ToString());
+            }
+
             OnProgressChanged += delegate { };
             OnComplete += delegate { };
         }
