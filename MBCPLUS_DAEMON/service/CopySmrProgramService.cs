@@ -137,6 +137,10 @@ namespace MBCPLUS_DAEMON
                             {
                                 img_type_name = "archive_thumbimg";
                                 tail = "_T";
+                            } else if (img_type == "6")
+                            {
+                                img_type_name = "archive_coverimg";
+                                tail = "_C";
                             }
                             if (!String.IsNullOrEmpty(img_type_name))
                             {

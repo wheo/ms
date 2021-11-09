@@ -574,12 +574,15 @@ namespace MBCPLUS_DAEMON
                                 , SP.org_bannerimg as org_bannerimg
                                 , SP.thumbimg as thumbimg
                                 , SP.org_thumbimg as org_thumbimg
+                                , SP.coverimg as coverimg
+                                , SP.org_coverimg as org_coverimg
                                 , SP.status as status
 , (SELECT COUNT(*) FROM TB_EDIT_INFO E WHERE E.id = SP.pid AND (E.type = 'img' AND E.board_type = 'smr_program')) AS edit_img_count
 , (SELECT COUNT(*) FROM TB_EDIT_INFO E WHERE E.id = SP.pid AND (E.type = 'posterimg1' AND E.board_type = 'smr_program')) AS edit_img_poster1_count
 , (SELECT COUNT(*) FROM TB_EDIT_INFO E WHERE E.id = SP.pid AND (E.type = 'posterimg2' AND E.board_type = 'smr_program')) AS edit_img_poster2_count
-, (SELECT COUNT(*) FROM TB_EDIT_INFO E WHERE E.id = SP.pid AND (E.type = 'thumbimg' AND E.board_type = 'smr_program')) AS edit_img_thumb_count
 , (SELECT COUNT(*) FROM TB_EDIT_INFO E WHERE E.id = SP.pid AND (E.type = 'bannerimg' AND E.board_type = 'smr_program')) AS edit_img_banner_count
+, (SELECT COUNT(*) FROM TB_EDIT_INFO E WHERE E.id = SP.pid AND (E.type = 'thumbimg' AND E.board_type = 'smr_program')) AS edit_img_thumb_count
+, (SELECT COUNT(*) FROM TB_EDIT_INFO E WHERE E.id = SP.pid AND (E.type = 'coverimg' AND E.board_type = 'smr_program')) AS edit_img_cover_count
                                 FROM TB_SMR_PROGRAM SP
                                 WHERE 1=1
                                 AND status = 'Pending'
@@ -936,6 +939,26 @@ namespace MBCPLUS_DAEMON
                                                   VALUES (CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', 'IMG', 'Pending', 5, '{3}')", smrProgramInfo.pid
                                                   , Util.escapedPath(smrProgramInfo.thumbimg)
                                                   , Util.escapedPath(smrProgramInfo.targetpath + Path.DirectorySeparatorChar + smrProgramInfo.pid + "_T" + edit_count_string + Path.GetExtension(smrProgramInfo.org_thumbimg.ToLower()))
+                                                  , edit_count_string);
+                using (MySqlConnection conn = new MySqlConnection(_strConn))
+                {
+                    conn.Open();
+                    MySqlCommand cmd = new MySqlCommand(_sql, conn);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+
+            if (!String.IsNullOrEmpty(smrProgramInfo.coverimg))
+            {
+                String edit_count_string = "";
+                if (smrProgramInfo.edit_img_cover_count > 1)
+                {
+                    edit_count_string = String.Format("_{0}", (smrProgramInfo.edit_img_cover_count - 1).ToString("D2"));
+                }
+                _sql = String.Format(@"INSERT INTO TB_ARCHIVE(insert_time, smr_pid, srcpath, targetpath, type, status, smr_img_type, edit_count_tail)
+                                                  VALUES (CURRENT_TIMESTAMP(), '{0}', '{1}', '{2}', 'IMG', 'Pending', 6, '{3}')", smrProgramInfo.pid
+                                                  , Util.escapedPath(smrProgramInfo.coverimg)
+                                                  , Util.escapedPath(smrProgramInfo.targetpath + Path.DirectorySeparatorChar + smrProgramInfo.pid + "_C" + edit_count_string + Path.GetExtension(smrProgramInfo.org_coverimg.ToLower()))
                                                   , edit_count_string);
                 using (MySqlConnection conn = new MySqlConnection(_strConn))
                 {
@@ -2171,6 +2194,10 @@ namespace MBCPLUS_DAEMON
             else if (img_type == "5")
             {
                 target_field = "cdn_thumbimg";
+            }
+            else if (img_type == "6")
+            {
+                target_field = "cdn_coverimg";
             }
 
             _sql = String.Format(@"UPDATE TB_SMR_PROGRAM

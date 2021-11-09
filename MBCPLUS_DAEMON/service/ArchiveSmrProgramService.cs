@@ -73,11 +73,15 @@ namespace MBCPLUS_DAEMON
                         smrProgramInfo.thumbimg = r["thumbimg"].ToString();
                         smrProgramInfo.org_thumbimg = r["org_thumbimg"].ToString();
 
+                        smrProgramInfo.coverimg = r["coverimg"].ToString();
+                        smrProgramInfo.org_coverimg = r["org_coverimg"].ToString();                        
+
                         smrProgramInfo.edit_img_count = Convert.ToInt32(r["edit_img_count"].ToString());
                         smrProgramInfo.edit_img_poster1_count = Convert.ToInt32(r["edit_img_poster1_count"].ToString());
                         smrProgramInfo.edit_img_poster2_count = Convert.ToInt32(r["edit_img_poster2_count"].ToString());
                         smrProgramInfo.edit_img_banner_count = Convert.ToInt32(r["edit_img_banner_count"].ToString());
                         smrProgramInfo.edit_img_thumb_count = Convert.ToInt32(r["edit_img_thumb_count"].ToString());
+                        smrProgramInfo.edit_img_cover_count = Convert.ToInt32(r["edit_img_cover_count"].ToString());                        
 
                         status = r["status"].ToString();
                         if (status.Equals("Pending"))
