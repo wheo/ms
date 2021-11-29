@@ -103,7 +103,7 @@ AND Y.edit_time > DATE_ADD(NOW(), INTERVAL - 3 DAY)");
             return ret;
         }
 
-        private async void DoWork()
+        private void DoWork()
         {
             logger.logging("Service Start...");
             TimeSpan ts_interval = new TimeSpan(1, 0, 0);
@@ -118,6 +118,7 @@ AND Y.edit_time > DATE_ADD(NOW(), INTERVAL - 3 DAY)");
                             try
                             {
                                 string jsonBody = JsonConvert.SerializeObject(r);
+                                logger.logging(jsonBody);
                                 List<SmrApiObject> response = JsonConvert.DeserializeObject<List<SmrApiObject>>(
                                     Http.PostBody(Singleton.getInstance().SMCyoutubueAPI, jsonBody)
                                     );
@@ -138,8 +139,8 @@ AND Y.edit_time > DATE_ADD(NOW(), INTERVAL - 3 DAY)");
                     await Task.Delay(ts_interval);
                 }
             });
-            await task;
-            logger.logging(string.Format($"{this.GetType().Name} get signal"));
+            
+            logger.logging(string.Format($"{this.GetType().Name} task running ..."));
         }
     }
 }

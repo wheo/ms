@@ -70,7 +70,7 @@ namespace MBCPLUS_DAEMON
             if (no_instance)
             {
                 mtx.ReleaseMutex();
-#if false
+#if true
                 YoutubeService youtubeService = null;
                 DailmotionService dailymotionService = null;
                 
@@ -101,7 +101,7 @@ namespace MBCPLUS_DAEMON
                 Application.Run(new frmMain());
 
                 smrYoutubeAPI.RequestStop();
-#if false
+#if true
                 broadPlanService.RequestStop();                
                 cdnService.RequestStop();                
                 ftpService.RequestStop();
