@@ -175,6 +175,7 @@
     <Compile Include="service\BroadPlanService.cs" />
     <Compile Include="service\CopySmrProgramService.cs" />
     <Compile Include="service\DailymotionService.cs" />
+    <Compile Include="service\SmrYoutubeAPI.cs" />
     <Compile Include="service\YoutubeService.cs" />
     <Compile Include="service\ClipService.cs" />
     <Compile Include="service\CDNService.cs" />

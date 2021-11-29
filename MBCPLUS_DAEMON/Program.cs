@@ -34,6 +34,11 @@ namespace MBCPLUS_DAEMON
             String strCallbackURL_b = myIni.Read("callback_url_b");
             String strBBMCHost = myIni.Read("bbmchost");
 
+            string strSMCyoutubueAPI = myIni.Read("smc_youtube");
+            Singleton.getInstance().SMCyoutubueAPI = strSMCyoutubueAPI;
+
+            //http://smc-api-production.azurewebsites.net/api/youtubeinfo post
+
             strCallbackURL[0] = strCallbackURL_m;
             strCallbackURL[1] = strCallbackURL_b;
             //int threadCount = Int32.Parse(strThreadCount);
@@ -65,7 +70,7 @@ namespace MBCPLUS_DAEMON
             if (no_instance)
             {
                 mtx.ReleaseMutex();
-
+#if false
                 YoutubeService youtubeService = null;
                 DailmotionService dailymotionService = null;
                 
@@ -74,6 +79,7 @@ namespace MBCPLUS_DAEMON
                     youtubeService = new YoutubeService();
                     dailymotionService = new DailmotionService();
                 }
+                
                 //ClipService clipService = new ClipService(); /*삭제 예정 MetaHub 관련*/
                 ProgramSeqService programSeqService = new ProgramSeqService();
                 ArchiveProgramService archiveProgramService = new ArchiveProgramService();
@@ -87,11 +93,15 @@ namespace MBCPLUS_DAEMON
                 FTPService ftpService = new FTPService();
                 CDNService cdnService = new CDNService();
                 service.BroadPlanService broadPlanService = new service.BroadPlanService();
+#endif
+                service.SmrYoutubeAPI smrYoutubeAPI = new service.SmrYoutubeAPI();
 
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
                 Application.Run(new frmMain());
 
+                smrYoutubeAPI.RequestStop();
+#if false
                 broadPlanService.RequestStop();                
                 cdnService.RequestStop();                
                 ftpService.RequestStop();
@@ -111,7 +121,7 @@ namespace MBCPLUS_DAEMON
                     dailymotionService.RequestStop();
                     youtubeService.RequestStop();
                 }
-                
+#endif
             }
             else
             {

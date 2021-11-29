@@ -40,6 +40,40 @@ namespace MBCPLUS_DAEMON
             return response;
         }
 
+        public static string PostBody(string uri, string jsonBody)
+        {
+            // Here we create the request and write the POST data to it.
+            var request = (HttpWebRequest)HttpWebRequest.Create(uri);
+            request.ContentType = "application/json";
+
+            request.Method = "POST";
+            request.Timeout = 1000;
+
+            try
+            {
+                using (var writer = new StreamWriter(request.GetRequestStream()))
+                {
+                    writer.Write(jsonBody);
+                }
+
+                string response = string.Empty;
+                using (WebResponse res = request.GetResponse())
+                {
+                    Stream respStream = res.GetResponseStream();
+                    using (StreamReader sr = new StreamReader(respStream))
+                    {
+                        response = sr.ReadToEnd();
+                    }
+                }
+
+                return response;
+            }
+            catch (WebException wex)
+            {
+                return null;
+            }
+        }
+
         public static String Get(string url)
         {
             int timeout = (int)20000;

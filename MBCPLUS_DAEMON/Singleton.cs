@@ -37,6 +37,8 @@ namespace MBCPLUS_DAEMON
 
         public String BBMChost { get; set; }
 
+        public string SMCyoutubueAPI { get; set; }
+
         private Singleton()
         {
         }
