@@ -69,7 +69,7 @@ namespace MBCPLUS_DAEMON.service
             string query = String.Format(@"
 SELECT Y.cid FROM TB_YOUTUBE Y WHERE Y.type = 'SMR' AND Y.videoid IS NULL
 AND Y.channel_id != ''
-AND Y.edit_time > DATE_ADD(NOW(), INTERVAL - 3 DAY)");
+AND Y.edit_time > DATE_ADD(NOW(), INTERVAL - 100 DAY)");
             using (MySqlConnection conn = new MySqlConnection(Singleton.getInstance().GetStrConn()))
             {
                 conn.Open();

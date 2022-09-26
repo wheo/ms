@@ -180,6 +180,7 @@ namespace MBCPLUS_DAEMON
                                     LEFT JOIN TB_CLIP C ON C.cid = YT.cid
                                     WHERE 1=1
                                     AND YT.status = 'Ready'
+                                    AND YT.edit_time BETWEEN DATE_ADD(NOW(),INTERVAL -100 DAY ) AND NOW()
                                     ");
             //2018-02-23T06:58:21.000Z
             //MySqlTransaction trans = conn.BeginTransaction();
@@ -1015,6 +1016,7 @@ namespace MBCPLUS_DAEMON
                                     , (SELECT COUNT(*) FROM TB_EDIT_INFO E WHERE E.id = C.cid AND (E.type = 'img' AND E.board_type = 'vod')) AS edit_vod_img_count
                                     , (SELECT COUNT(*) FROM TB_EDIT_INFO E WHERE E.id = C.cid AND (E.type = 'vod' AND E.board_type = 'vod')) AS edit_vod_clip_count
                                     , C.isuse as isuse
+                                    , C.homepage_isuse as homepage_isuse
                                     FROM TB_CLIP C
                                     LEFT JOIN TB_PROGRAM_SEQ PS ON PS.gid = C.gid
                                     LEFT JOIN TB_PROGRAM P ON P.pid = PS.pid

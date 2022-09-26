@@ -165,6 +165,8 @@ namespace MBCPLUS_DAEMON
 
                             clipInfo.yt_type = r["yt_type"].ToString();
 
+                            clipInfo.homepage_isuse = r["homepage_isuse"].ToString();
+
                             //상태를 Archive로 바꿈
                             mapper.UpdateClipStatus(clipInfo.cid, "Archiving");
 
@@ -472,12 +474,20 @@ namespace MBCPLUS_DAEMON
                             {
                                 // CDN에 영상이 이미 있는 경우
                                 frmMain.WriteLogThread(String.Format("cid : {0}, yt_isuse : {1}, dm_isuse : {2}, idolvod : {3}, idolclip : {4}, idolvote : {5}", clipInfo.cid, clipInfo.yt_isuse, clipInfo.dm_isuse, clipInfo.idolvod_YN, clipInfo.idolclip_YN, clipInfo.idolvote_YN));
-                                if (clipInfo.idolvod_YN == "Y" || clipInfo.idolclip_YN == "Y" || clipInfo.idolvote_YN == "Y")
+                                if (clipInfo.idolvod_YN == "Y" || clipInfo.idolclip_YN == "Y" || clipInfo.idolvote_YN == "Y" || clipInfo.homepage_isuse == "Y")
                                 {
                                     String srcPath = null;
                                     // 셋중에 하나라도 Y일경우 check
                                     if (String.IsNullOrEmpty(clipInfo.clipsrcpath) && mapper.GetIdolChampCheck(clipInfo.cid))
                                     {
+                                        if ( clipInfo.homepage_isuse == "Y")
+                                        {
+                                            // idolchamp 대상이 아니지만 homepage_isuse Y일 경우
+                                            if (mapper.SetAdditionalTranscoding(clipInfo.clip_pk, clipInfo.gid, clipInfo.cid, out srcPath))
+                                            {
+                                                
+                                            }
+                                        }
                                     }
                                     else
                                     {

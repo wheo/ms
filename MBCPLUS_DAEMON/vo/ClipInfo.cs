@@ -50,5 +50,6 @@ namespace MBCPLUS_DAEMON
         public int edit_vod_clip_count { get; set; }
         public String yt_type { get; set; }
         public String isvod { get; set; }
+        public String homepage_isuse { get; set; }
     }
 }
