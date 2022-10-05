@@ -62,6 +62,26 @@ namespace MBCPLUS_DAEMON
         
         private Log log;
 
+        public static string StringToCSVCell(string str)
+        {
+            bool mustQuote = (str.Contains(",") || str.Contains("\"") || str.Contains("\r") || str.Contains("\n"));
+            if (mustQuote)
+            {
+                StringBuilder sb = new StringBuilder();
+                sb.Append("\"");
+                foreach (char nextChar in str)
+                {
+                    sb.Append(nextChar);
+                    if (nextChar == '"')
+                        sb.Append("\"");
+                }
+                sb.Append("\"");
+                return sb.ToString();
+            }
+
+            return str;
+        }
+
         public YTInfo()
         {
             if (log == null)
@@ -129,6 +149,19 @@ namespace MBCPLUS_DAEMON
 
             Dictionary<String, String> ytMeta = new Dictionary<string, string>();
 
+            //특수문자 추가 패턴 2018-07-25 " 를 ""로
+
+            // 2018-12-27 <, > 를 유튜브가 인식할 수 있는 문자로 변경
+
+            // 2022-10-5 StringToCSVCell 함수로 대체
+
+            //title = title.Replace("\"", "\"\"");
+            title = title.Replace("<", "ᐸ");
+            title = title.Replace(">", "ᐳ");
+            //description = description.Replace("\"", "\"\"");
+            description = description.Replace("<", "ᐸ");
+            description = description.Replace(">", "ᐳ");
+
             if (information == "tv")
             {
                 if (privacy == "reservation")
@@ -162,8 +195,8 @@ namespace MBCPLUS_DAEMON
                     ytMeta.Add("ep_caption_language", caption_language);
                 }
                 ytMeta.Add("ep_number", String.Format("\"{0}\"", ep_number));
-                ytMeta.Add("ep_title", String.Format("\"{0}\"", title));
-                ytMeta.Add("ep_description", String.Format("\"{0}\"", description));                
+                ytMeta.Add("ep_title", StringToCSVCell(title));
+                ytMeta.Add("ep_description", StringToCSVCell(description));
                 ytMeta.Add("ep_video_genre", String.Format("\"{0}\"", category));
                 ytMeta.Add("ep_keywords", String.Format("\"{0}\"", tags));
                 ytMeta.Add("ep_rating", String.Format("\"{0}\"", "Youtube:L0 S0 N0 D0 V0 F0"));
@@ -189,8 +222,8 @@ namespace MBCPLUS_DAEMON
                     ytMeta.Add("ep_tms_id", String.Format("\"{0}\"", tmsid));
                 }                
                 ytMeta.Add("ep_number", String.Format("\"{0}\"", ep_number));
-                ytMeta.Add("ep_title", String.Format("\"{0}\"", title));
-                ytMeta.Add("ep_description", String.Format("\"{0}\"", description));
+                ytMeta.Add("ep_title", StringToCSVCell(title));
+                ytMeta.Add("ep_description", StringToCSVCell(description));
                 ytMeta.Add("ownership", String.Format("\"{0}\"", ownership.Replace(",","|") ));
                 ytMeta.Add("match_policy", match_policy);
                 ytMeta.Add("se_number", String.Format("\"{0}\"", "1"));
@@ -205,19 +238,10 @@ namespace MBCPLUS_DAEMON
                 //caption_file 있음 확인할 것
                 ytMeta.Add("filename", String.Format("\"{0}\"", FileName));
                 ytMeta.Add("channel", String.Format("\"{0}\"", channelName));
-                ytMeta.Add("privacy", String.Format("\"{0}\"", privacy));
+                ytMeta.Add("privacy", String.Format("\"{0}\"", privacy));                
 
-                //특수문자 추가 패턴 2018-07-25 " 를 ""로
-                // 2018-12-27 <, > 를 유튜브가 인식할 수 있는 문자로 변경
-                title = title.Replace("\"", "\"\"");
-                title = title.Replace("<", "ᐸ");
-                title = title.Replace(">", "ᐳ");
-                description = description.Replace("\"", "\"\"");
-                description = description.Replace("<", "ᐸ");
-                description = description.Replace(">", "ᐳ");
-
-                ytMeta.Add("title", String.Format("\"{0}\"", title));
-                ytMeta.Add("description", String.Format("\"{0}\"", description));                
+                ytMeta.Add("title", StringToCSVCell(title));
+                ytMeta.Add("description", StringToCSVCell(description));                
                 ytMeta.Add("keywords", String.Format("\"{0}\"", tags));
                 //ytMeta.Add("block_outside_ownership", "Yes");
                 ytMeta.Add("enable_content_id", "Yes");

@@ -185,7 +185,7 @@ namespace MBCPLUS_DAEMON
             {
                 DataSet ds = new DataSet();
                 String cid = null;
-                YTMetaInfo ytMetaiInfo = new YTMetaInfo();
+                YTMetaInfo ytMetaiInfo = new YTMetaInfo(); 
                 try
                 {
                     mapper.YoutubeRequest(ds);
