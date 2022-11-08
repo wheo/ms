@@ -165,7 +165,7 @@ namespace MBCPLUS_DAEMON
 
                             clipInfo.yt_type = r["yt_type"].ToString();
 
-                            clipInfo.homepage_isuse = r["homepage_isuse"].ToString();
+                            
 
                             //상태를 Archive로 바꿈
                             mapper.UpdateClipStatus(clipInfo.cid, "Archiving");
@@ -471,50 +471,7 @@ namespace MBCPLUS_DAEMON
                                     , edit_count_string);
                             }
                             else if (clipInfo.cdnmov.Length > 7)
-                            {
-                                // CDN에 영상이 이미 있는 경우
-                                frmMain.WriteLogThread(String.Format("cid : {0}, yt_isuse : {1}, dm_isuse : {2}, idolvod : {3}, idolclip : {4}, idolvote : {5}", clipInfo.cid, clipInfo.yt_isuse, clipInfo.dm_isuse, clipInfo.idolvod_YN, clipInfo.idolclip_YN, clipInfo.idolvote_YN));
-                                if (clipInfo.idolvod_YN == "Y" || clipInfo.idolclip_YN == "Y" || clipInfo.idolvote_YN == "Y" || clipInfo.homepage_isuse == "Y")
-                                {
-                                    String srcPath = null;
-                                    // 셋중에 하나라도 Y일경우 check
-                                    if (String.IsNullOrEmpty(clipInfo.clipsrcpath) && mapper.GetIdolChampCheck(clipInfo.cid))
-                                    {
-                                        if ( clipInfo.homepage_isuse == "Y")
-                                        {
-                                            // idolchamp 대상이 아니지만 homepage_isuse Y일 경우
-                                            if (mapper.SetAdditionalTranscoding(clipInfo.clip_pk, clipInfo.gid, clipInfo.cid, out srcPath))
-                                            {
-                                                
-                                            }
-                                        }
-                                    }
-                                    else
-                                    {
-                                        //추가 트랜스코딩을 요청해야함 (어떤 데이터로??)
-                                        if (mapper.SetAdditionalTranscoding(clipInfo.clip_pk, clipInfo.gid, clipInfo.cid, out srcPath))
-                                        {
-                                            // 실행 완료
-                                        }
-                                        else
-                                        {
-                                            // 트랜젝션 롤백
-                                            // srcPath = null
-                                        }
-                                        log.logging(String.Format("SetAdditionalTranscoding : {0}, srcPath : {1}", clipInfo.cid, srcPath));
-                                    }
-                                }
-                                // 이미 트랜스코딩이 된경우
-                                /*
-                                if (clipInfo.isuse != "T")
-                                {
-                                    m_sql = String.Format("UPDATE TB_CLIP SET status = 'Ready' WHERE clip_pk = '{0}'", clipInfo.clip_pk);
-                                }
-                                else
-                                {
-                                    m_sql = String.Format("UPDATE TB_CLIP SET endtime = CURRENT_TIMESTAMP(), status = 'Completed' WHERE clip_pk = '{0}'", clipInfo.clip_pk);
-                                }*/
-
+                            { 
                                 mapper.UpdateClipStatus(clipInfo.cid, "Completed");
 
                                 frmMain.WriteLogThread(String.Format(@"[ArchiveService] cdnmov : {0} is already exist, cid = {1}", clipInfo.cdnmov, clipInfo.cid));
