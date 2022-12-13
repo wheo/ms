@@ -212,7 +212,9 @@ namespace MBCPLUS_DAEMON
                 // ERROR_CODE
                 return false;
             }
-            String destPath = String.Format("/{0}_{1}/{2}", Path.GetFileNameWithoutExtension(m_strSourcePath), ytInfo.session_id, Path.GetFileName(m_strSourcePath));
+            //String destPath = String.Format("/{0}_{1}/{2}", Path.GetFileNameWithoutExtension(m_strSourcePath), ytInfo.session_id, Path.GetFileName(m_strSourcePath));
+            String destPath = String.Format("/{0}_{1}/{2}", ytInfo.cid, ytInfo.session_id, Path.GetFileName(m_strSourcePath));
+
 
             if (yt_SendFile(m_strSourcePath, destPath))
             {

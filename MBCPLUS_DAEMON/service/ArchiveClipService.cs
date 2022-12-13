@@ -19,7 +19,6 @@ namespace MBCPLUS_DAEMON
 
         private Log log;
         private SqlMapper mapper;
-        private String m_sql = "";
 
         public ArchiveClipService()
         {
