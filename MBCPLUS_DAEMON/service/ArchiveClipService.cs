@@ -164,7 +164,7 @@ namespace MBCPLUS_DAEMON
 
                             clipInfo.yt_type = r["yt_type"].ToString();
 
-                            
+
 
                             //상태를 Archive로 바꿈
                             mapper.UpdateClipStatus(clipInfo.cid, "Archiving");
